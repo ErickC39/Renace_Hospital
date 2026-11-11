@@ -1,0 +1,13 @@
+# Apache (máquina virtual): toda petición que no sea un archivo real va a index.php
+RewriteEngine On
+
+# Estilos, scripts e íconos: el navegador los guarda; el layout cambia ?v= cuando se modifican.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|svg|png|jpg|ico)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+</IfModule>
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

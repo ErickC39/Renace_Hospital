@@ -1,0 +1,15 @@
+# Dependencias (se instalan con: composer install)
+/vendor/
+
+# Credenciales y configuración local: NUNCA al repositorio
+/app/config/config.local.php
+
+# Caché y logs
+/.phpunit.cache/
+/storage/logs/*.log
+
+# Editor / sistema
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

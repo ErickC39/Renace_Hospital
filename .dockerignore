@@ -1,0 +1,16 @@
+# Nunca dentro de la imagen
+app/config/config.local.php
+
+# No hacen falta en el servidor
+.git
+.gitignore
+.dockerignore
+Dockerfile
+.editorconfig
+.phpunit.cache
+.vscode
+.idea
+vendor
+tests
+docs
+phpunit.xml

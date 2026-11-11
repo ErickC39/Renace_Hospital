@@ -1,0 +1,17 @@
+# Configuración de red de Oracle SOLO para el aplicativo HospitalUTC.
+# El aplicativo la usa porque config apunta 'db.tns_admin' a esta carpeta.
+#
+# NONE = autenticar solo con usuario y contraseña de Oracle.
+# Sin esto, en Windows el cliente intenta autenticación de Windows (NTS)
+# y la conexión a la VM falla con ORA-12638.
+SQLNET.AUTHENTICATION_SERVICES = (NONE)
+NAMES.DIRECTORY_PATH = (EZCONNECT, TNSNAMES)
+
+# Si la VM no responde, se avisa pronto en vez de dejar al servidor esperando.
+SQLNET.OUTBOUND_CONNECT_TIMEOUT = 5
+
+# El tráfico entre el aplicativo y la VM viaja por internet: cifrado obligatorio.
+SQLNET.ENCRYPTION_CLIENT = REQUIRED
+SQLNET.ENCRYPTION_TYPES_CLIENT = (AES256)
+SQLNET.CRYPTO_CHECKSUM_CLIENT = REQUIRED
+SQLNET.CRYPTO_CHECKSUM_TYPES_CLIENT = (SHA256)

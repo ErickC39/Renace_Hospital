@@ -1,0 +1,109 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Core\Modelo;
+
+/** Pedidos, deducciones, pagos y facturas. */
+final class Venta extends Modelo
+{
+    /** @return list<array<string, mixed>> */
+    public function pedidosDeHoy(): array
+    {
+        return $this->db->select(
+            "SELECT id_pedido, cliente, numero_documento, empleado, estado, hora_pedido,
+                    subtotal, total_deducciones, total_pagar, numero_factura
+               FROM vw_venta_pedido
+              WHERE es_hoy = 'S'
+              ORDER BY id_pedido",
+        );
+    }
+
+    /** @return array<string, mixed>|null */
+    public function pedido(int $idPedido): ?array
+    {
+        return $this->db->select(
+            'SELECT id_pedido, cliente, numero_documento, empleado, estado, hora_pedido,
+                    subtotal, total_deducciones, total_pagar, numero_factura
+               FROM vw_venta_pedido
+              WHERE id_pedido = :id_pedido',
+            ['id_pedido' => $idPedido],
+        )[0] ?? null;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function detalle(int $idPedido): array
+    {
+        return $this->db->select(
+            'SELECT codigo, producto, cantidad, precio_unitario, subtotal
+               FROM vw_venta_detalle_pedido
+              WHERE id_pedido = :id_pedido',
+            ['id_pedido' => $idPedido],
+        );
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function deduccionesDelPedido(int $idPedido): array
+    {
+        return $this->db->select(
+            'SELECT nombre, tipo_valor, valor, monto_aplicado
+               FROM vw_venta_deduccion_pedido
+              WHERE id_pedido = :id_pedido',
+            ['id_pedido' => $idPedido],
+        );
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function deducciones(): array
+    {
+        return $this->db->select('SELECT id_deduccion, nombre, tipo_valor, valor FROM vw_venta_deduccion ORDER BY nombre');
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function productos(): array
+    {
+        return $this->db->select('SELECT id_producto, codigo, nombre, precio_venta, existencias FROM vw_venta_producto ORDER BY nombre');
+    }
+
+    /**
+     * Crea el pedido con sus productos y deducciones. Devuelve su id.
+     *
+     * @param list<array{id_producto:int, cantidad:int}> $lineas
+     * @param list<int> $deducciones
+     */
+    public function crear(string $documento, int $idUsuario, array $lineas, array $deducciones): int
+    {
+        // Si el mismo producto viene en dos líneas, se suma en una sola.
+        $cantidades = [];
+        foreach ($lineas as $l) {
+            $cantidades[$l['id_producto']] = ($cantidades[$l['id_producto']] ?? 0) + $l['cantidad'];
+        }
+        $textoLineas = [];
+        foreach ($cantidades as $idProducto => $cantidad) {
+            $textoLineas[] = "{$idProducto}:{$cantidad}";
+        }
+
+        return (int) $this->db->call(
+            'pkg_venta.sp_pedido_crear',
+            [
+                'p_numero_documento' => $documento,
+                'p_id_usuario' => $idUsuario,
+                'p_lineas' => implode(',', $textoLineas),
+                'p_deducciones' => implode(',', array_unique($deducciones)),
+            ],
+            ['p_id_pedido'],
+        )['p_id_pedido'];
+    }
+
+    /** Registra el pago y emite la factura. Devuelve el número de factura. */
+    public function cobrar(int $idPedido, string $metodo, string $monto, string $referencia): string
+    {
+        return (string) $this->db->call(
+            'pkg_venta.sp_pedido_cobrar',
+            ['p_id_pedido' => $idPedido, 'p_metodo_pago' => $metodo, 'p_monto' => $monto, 'p_referencia' => $referencia],
+            ['p_numero_factura'],
+        )['p_numero_factura'];
+    }
+}
