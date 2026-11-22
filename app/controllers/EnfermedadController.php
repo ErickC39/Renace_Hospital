@@ -39,6 +39,9 @@ final class EnfermedadController extends Controlador
     /** POST /enfermedades/nueva */
     public function guardar(): Response
     {
+        if ((int) entrada('id_categoria_enfermedad') <= 0 || (int) entrada('id_medicamento') <= 0) {
+            return $this->rechazar('Elige la categoría y el medicamento del tratamiento.', '/enfermedades/nueva');
+        }
         foreach (['codigo_cie10', 'nombre', 'dosis'] as $campo) {
             if (entrada($campo) === '') {
                 return $this->rechazar('Indica el código CIE-10, el nombre y la dosis.', '/enfermedades/nueva');
@@ -61,6 +64,40 @@ final class EnfermedadController extends Controlador
             ]),
             'Enfermedad guardada con su tratamiento.',
             '/enfermedades',
+        );
+    }
+
+    /** GET /enfermedades/categorias */
+    public function categorias(): string
+    {
+        return View::render('enfermedades/categorias', [
+            'titulo' => 'Categorías de enfermedades',
+            'categorias' => (new Enfermedad())->categorias(),
+        ]);
+    }
+
+    /** POST /enfermedades/categorias */
+    public function crearCategoria(): Response
+    {
+        return $this->guardarCategoria(null);
+    }
+
+    /** POST /enfermedades/categorias/{id} */
+    public function editarCategoria(string $id): Response
+    {
+        return $this->guardarCategoria((int) $id);
+    }
+
+    private function guardarCategoria(?int $id): Response
+    {
+        $nombre = entrada('nombre_categoria');
+        if ($nombre === '' || mb_strlen($nombre) > 100) {
+            return $this->rechazar('Indica el nombre de la categoría (hasta 100 caracteres).', '/enfermedades/categorias');
+        }
+        return $this->ejecutar(
+            static fn() => (new Enfermedad())->guardarCategoria($id, $nombre),
+            $id === null ? 'Categoría agregada.' : 'Categoría guardada.',
+            '/enfermedades/categorias',
         );
     }
 }

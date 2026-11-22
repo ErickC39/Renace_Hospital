@@ -387,6 +387,179 @@ final class ModulosTest extends TestCase
         );
     }
 
+    private const PRODUCTO = [
+        'id_categoria_producto' => '2', 'codigo' => 'gas-001', 'nombre_producto' => 'Gasa estéril', 'descripcion' => '',
+        'costo' => '350,50', 'precio_venta' => '', 'stock_minimo' => '20',
+    ];
+
+    public function testAgregarProductoEsUnaSolaLlamadaConElCodigoEnMayusculas(): void
+    {
+        $db = $this->bd();
+
+        $res = $this->enviar('/inventario/productos', ['inventario.ajustar'], self::PRODUCTO);
+
+        $this->assertSame(['pkg_inventario.sp_producto_guardar'], array_column($db->negocio(), 'procedure'));
+        $in = $db->negocio()[0]['in'];
+        $this->assertNull($in['p_id_producto']);
+        $this->assertSame('GAS-001', $in['p_codigo']);
+        $this->assertSame(350.5, $in['p_costo']);
+        $this->assertNull($in['p_precio_venta']);
+        $this->assertSame('N', $in['p_se_vende']);
+        $this->assertSame('/inventario', $res->headers['Location']);
+    }
+
+    public function testEditarProductoUsaElIdDeLaRuta(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/inventario/productos/7', ['inventario.ajustar'], ['se_vende' => 'on', 'precio_venta' => '900'] + self::PRODUCTO);
+
+        $this->assertSame(7, $db->negocio()[0]['in']['p_id_producto']);
+        $this->assertSame('S', $db->negocio()[0]['in']['p_se_vende']);
+    }
+
+    /** @return array<string, array{array<string, string>}> */
+    public static function productosInvalidos(): array
+    {
+        return [
+            'sin categoría' => [['id_categoria_producto' => '']],
+            'sin código' => [['codigo' => '']],
+            'código con espacios' => [['codigo' => 'GAS 001']],
+            'costo negativo' => [['costo' => '-5']],
+            'mínimo con decimales' => [['stock_minimo' => '2.5']],
+            'se vende sin precio' => [['se_vende' => 'on', 'precio_venta' => '']],
+        ];
+    }
+
+    /** @param array<string, string> $cambio */
+    #[DataProvider('productosInvalidos')]
+    public function testUnProductoInvalidoNoSeGuarda(array $cambio): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/inventario/productos', ['inventario.ajustar'], $cambio + self::PRODUCTO);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testElProveedorLlegaConLaCedulaYElTelefonoSoloEnDigitos(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/inventario/proveedores', ['inventario.ajustar'], [
+            'nombre_proveedor' => 'Distribuidora Central', 'cedula_juridica' => '3-101-123456', 'telefono' => '2222-3333',
+            'correo' => 'Ventas@Central.cr', 'direccion' => 'Heredia',
+        ]);
+
+        $in = $db->negocio()[0]['in'];
+        $this->assertSame('pkg_inventario.sp_proveedor_guardar', $db->negocio()[0]['procedure']);
+        $this->assertSame('3101123456', $in['p_cedula_juridica']);
+        $this->assertSame('22223333', $in['p_telefono']);
+        $this->assertSame('ventas@central.cr', $in['p_correo']);
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function proveedoresInvalidos(): array
+    {
+        return [
+            'cédula corta' => ['cedula_juridica', '3-101-12345'],
+            'teléfono de 7 dígitos' => ['telefono', '2222-333'],
+            'correo inválido' => ['correo', 'ventas-central'],
+        ];
+    }
+
+    #[DataProvider('proveedoresInvalidos')]
+    public function testUnProveedorInvalidoNoSeGuarda(string $campo, string $valor): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/inventario/proveedores', ['inventario.ajustar'], [$campo => $valor] + ['nombre_proveedor' => 'Central', 'cedula_juridica' => '3101123456']);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testLasCategoriasSeGuardanEnSuPaquete(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/inventario/categorias', ['inventario.ajustar'], ['nombre_categoria' => 'Material de curación']);
+        $this->enviar('/enfermedades/categorias/4', ['catalogo.editar'], ['nombre_categoria' => 'Respiratorias']);
+
+        $this->assertSame(['pkg_inventario.sp_categoria_producto_guardar', 'pkg_catalogo.sp_categoria_enfermedad_guardar'], array_column($db->negocio(), 'procedure'));
+        $this->assertSame(['p_id_categoria_producto' => null, 'p_nombre' => 'Material de curación'], $db->negocio()[0]['in']);
+        $this->assertSame(['p_id_categoria_enfermedad' => 4, 'p_nombre' => 'Respiratorias'], $db->negocio()[1]['in']);
+    }
+
+    private const MEDICAMENTO = [
+        'id_medicamento' => '0', 'principio_activo' => 'Acetaminofén', 'concentracion' => '500 mg', 'presentacion' => 'Tableta',
+        'via_aplicacion' => 'Oral', 'indicaciones_uso' => '', 'restricciones' => '', 'horas' => '08:00,20:00',
+    ];
+
+    public function testElMedicamentoConProductoNuevoEsUnaSolaOperacion(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/medicamentos/guardar', ['catalogo.editar'], ['origen' => 'nuevo', 'codigo' => 'med-010', 'nombre_producto' => 'Acetaminofén 500 mg x 10',
+            'costo' => '1200', 'precio_venta' => '1800', 'stock_minimo' => '30', 'se_vende' => 'on'] + self::MEDICAMENTO);
+
+        $this->assertSame(['pkg_catalogo.sp_medicamento_con_producto'], array_column($db->negocio(), 'procedure'));
+        $in = $db->negocio()[0]['in'];
+        $this->assertSame('MED-010', $in['p_codigo']);
+        $this->assertSame('Acetaminofén', $in['p_principio_activo']);
+        $this->assertSame('08:00,20:00', $in['p_horas']);
+        $this->assertArrayNotHasKey('p_id_categoria_producto', $in);
+    }
+
+    public function testElMedicamentoConProductoExistenteNoCreaProducto(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/medicamentos/guardar', ['catalogo.editar'], ['origen' => 'existente', 'id_producto' => '5'] + self::MEDICAMENTO);
+
+        $this->assertSame(['pkg_catalogo.sp_medicamento_guardar'], array_column($db->negocio(), 'procedure'));
+        $this->assertSame(5, $db->negocio()[0]['in']['p_id_producto']);
+    }
+
+    /** @return array<string, array{string, string, string}> */
+    public static function pantallasDeCatalogo(): array
+    {
+        return [
+            'inventario' => ['/inventario', 'inventario.ajustar', 'Editar producto'],
+            'proveedores y categorías' => ['/inventario/catalogos', 'inventario.ajustar', 'Editar proveedor'],
+            'categorías de enfermedad' => ['/enfermedades/categorias', 'catalogo.editar', 'Editar categoría'],
+            'medicamento nuevo' => ['/medicamentos/nuevo', 'catalogo.editar', 'Crear el producto ahora'],
+        ];
+    }
+
+    #[DataProvider('pantallasDeCatalogo')]
+    public function testLasPantallasDeCatalogoSeMuestran(string $ruta, string $permiso, string $texto): void
+    {
+        $this->bd([
+            'vw_inventario_producto' => [['id_producto' => '1', 'codigo' => 'GAS-001', 'nombre' => 'Gasa', 'categoria' => 'Curación', 'uso' => 'Uso médico',
+                'existencias' => '3', 'stock_minimo' => '10', 'costo' => '350', 'precio_venta' => null, 'id_categoria_producto' => '2', 'descripcion' => null, 'se_vende' => 'N']],
+            'vw_inventario_categoria' => [['id_categoria_producto' => '2', 'nombre' => 'Curación', 'productos' => '1']],
+            'vw_inventario_proveedor' => [['id_proveedor' => '1', 'nombre' => 'Central', 'cedula_juridica' => '3-101-123456', 'telefono' => null, 'correo' => null, 'direccion' => null]],
+            'vw_enfermedad_categoria' => [['id_categoria_enfermedad' => '4', 'nombre' => 'Respiratorias', 'enfermedades' => '0']],
+        ]);
+        $this->entrar([$permiso, 'inventario.ver', 'catalogo.ver']);
+
+        $res = $this->app()->handle('GET', $ruta);
+
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString($texto, $res->body);
+    }
+
+    public function testUnMensajeNuevoReemplazaAlQueQuedoSinMostrar(): void
+    {
+        $this->bd();
+        $_SESSION['flash_error'] = 'La clave actual no es correcta.';
+
+        $this->enviar('/inventario/categorias', ['inventario.ajustar'], ['nombre_categoria' => 'Limpieza']);
+
+        $this->assertSame('Categoría agregada.', $_SESSION['flash_ok']);
+        $this->assertArrayNotHasKey('flash_error', $_SESSION);
+    }
+
     /**
      * @param array<string, list<array<string, mixed>>> $filas
      * @param array<string, array<string, mixed>>       $salidas

@@ -21,9 +21,9 @@ abstract class Controlador
     {
         try {
             $accion();
-            Session::set('flash_ok', $exito);
+            self::avisar('flash_ok', $exito);
         } catch (BusinessException $e) {
-            Session::set('flash_error', $e->getMessage());
+            self::avisar('flash_error', $e->getMessage());
         }
         return Response::redirect($volver);
     }
@@ -48,8 +48,16 @@ abstract class Controlador
     /** Muestra un error de validación en la ruta indicada, sin consultar la base de datos. */
     protected function rechazar(string $mensaje, string $volver): Response
     {
-        Session::set('flash_error', $mensaje);
+        self::avisar('flash_error', $mensaje);
         Registro::error(422, $mensaje);
         return Response::redirect($volver);
+    }
+
+    /** Deja un solo mensaje para la siguiente página: el nuevo reemplaza al que hubiera quedado sin mostrar. */
+    private static function avisar(string $tipo, string $mensaje): void
+    {
+        Session::pull('flash_ok');
+        Session::pull('flash_error');
+        Session::set($tipo, $mensaje);
     }
 }

@@ -46,6 +46,13 @@ return static function (Router $router): void {
     $router->get('/inventario', [InventarioController::class, 'index'], 'inventario.ver');
     $router->get('/inventario/exportar', [InventarioController::class, 'exportar'], 'inventario.ver');
     $router->post('/inventario/entrada', [InventarioController::class, 'entrada'], 'inventario.ajustar');
+    $router->post('/inventario/productos', [InventarioController::class, 'crearProducto'], 'inventario.ajustar');
+    $router->post('/inventario/productos/{id}', [InventarioController::class, 'editarProducto'], 'inventario.ajustar');
+    $router->get('/inventario/catalogos', [InventarioController::class, 'catalogos'], 'inventario.ajustar');
+    $router->post('/inventario/proveedores', [InventarioController::class, 'crearProveedor'], 'inventario.ajustar');
+    $router->post('/inventario/proveedores/{id}', [InventarioController::class, 'editarProveedor'], 'inventario.ajustar');
+    $router->post('/inventario/categorias', [InventarioController::class, 'crearCategoria'], 'inventario.ajustar');
+    $router->post('/inventario/categorias/{id}', [InventarioController::class, 'editarCategoria'], 'inventario.ajustar');
 
     // Visitantes
     $router->get('/visitas', [VisitaController::class, 'index'], 'visita.ver');
@@ -82,6 +89,9 @@ return static function (Router $router): void {
     $router->get('/enfermedades', [EnfermedadController::class, 'index'], 'catalogo.ver');
     $router->get('/enfermedades/nueva', [EnfermedadController::class, 'nueva'], 'catalogo.editar');
     $router->post('/enfermedades/nueva', [EnfermedadController::class, 'guardar'], 'catalogo.editar');
+    $router->get('/enfermedades/categorias', [EnfermedadController::class, 'categorias'], 'catalogo.editar');
+    $router->post('/enfermedades/categorias', [EnfermedadController::class, 'crearCategoria'], 'catalogo.editar');
+    $router->post('/enfermedades/categorias/{id}', [EnfermedadController::class, 'editarCategoria'], 'catalogo.editar');
 
     // Empleados
     $router->get('/empleados', [EmpleadoController::class, 'index'], 'usuario.administrar');

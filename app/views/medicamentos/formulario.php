@@ -17,8 +17,35 @@ use App\Core\Csrf;
     <form method="post" action="/medicamentos/guardar">
         <?= Csrf::field() ?>
         <input type="hidden" name="id_medicamento" value="<?= e($med['id_medicamento'] ?? 0) ?>">
-        <div class="field"><label class="form-label" for="id_producto">Producto del inventario</label>
-            <select class="form-select" id="id_producto" name="id_producto" required><?= opciones($productos, 'id_producto', 'nombre', $med['id_producto'] ?? null) ?></select></div>
+        <?php if ($med !== null): ?>
+            <input type="hidden" name="id_producto" value="<?= e($med['id_producto']) ?>">
+            <div class="field"><span class="form-label">Producto del inventario</span><div><code><?= e($med['codigo']) ?></code></div></div>
+        <?php else:
+            $nuevo = $productos === []; ?>
+            <fieldset class="field">
+                <legend class="form-label">Producto del inventario</legend>
+                <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="origen" id="origen-existente" value="existente" data-alternar="producto-existente" <?= $nuevo ? 'disabled' : 'checked' ?>><label class="form-check-label" for="origen-existente">Ya está en el inventario</label></div>
+                <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="origen" id="origen-nuevo" value="nuevo" data-alternar="producto-nuevo" <?= $nuevo ? 'checked' : '' ?>><label class="form-check-label" for="origen-nuevo">Crear el producto ahora</label></div>
+                <?php if ($nuevo): ?><div class="hint">No hay productos de medicamento sin ficha; se crea uno nuevo en la categoría Medicamentos.</div><?php endif; ?>
+            </fieldset>
+            <fieldset id="producto-existente" <?= $nuevo ? 'hidden disabled' : '' ?>>
+                <div class="field"><label class="form-label" for="id_producto">Producto</label>
+                    <select class="form-select" id="id_producto" name="id_producto" required><?= opciones($productos, 'id_producto', 'nombre') ?></select>
+                    <div class="hint">Solo aparecen productos de categoría Medicamentos que todavía no tienen ficha.</div></div>
+            </fieldset>
+            <fieldset id="producto-nuevo" <?= $nuevo ? '' : 'hidden disabled' ?>>
+                <div class="fields f2">
+                    <div class="field"><label class="form-label" for="codigo">Código</label><input class="form-control" id="codigo" name="codigo" required maxlength="30" pattern="[A-Za-z0-9][A-Za-z0-9_\-]*" autocomplete="off" placeholder="Por ejemplo, MED-010"></div>
+                    <div class="field"><label class="form-label" for="nombre_producto">Nombre del producto</label><input class="form-control" id="nombre_producto" name="nombre_producto" required maxlength="200" autocomplete="off" placeholder="Por ejemplo, Acetaminofén 500 mg x 10"></div>
+                </div>
+                <div class="fields f3">
+                    <div class="field"><label class="form-label" for="costo">Costo (₡)</label><input class="form-control" id="costo" name="costo" type="number" min="0" step="0.01" required></div>
+                    <div class="field"><label class="form-label" for="precio_venta">Precio de venta (₡)</label><input class="form-control" id="precio_venta" name="precio_venta" type="number" min="0" step="0.01"></div>
+                    <div class="field"><label class="form-label" for="stock_minimo">Mínimo de existencias</label><input class="form-control" id="stock_minimo" name="stock_minimo" type="number" min="0" step="1" value="0" required></div>
+                </div>
+                <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" role="switch" id="se_vende" name="se_vende"><label class="form-check-label" for="se_vende">Se vende al cliente (necesita precio de venta)</label></div>
+            </fieldset>
+        <?php endif; ?>
         <div class="fields f2">
             <div class="field"><label class="form-label" for="principio_activo">Principio activo</label><input class="form-control" id="principio_activo" name="principio_activo" value="<?= e($med['principio_activo'] ?? '') ?>" required maxlength="200"></div>
             <div class="field"><label class="form-label" for="concentracion">Concentración</label><input class="form-control" id="concentracion" name="concentracion" value="<?= e($med['concentracion'] ?? '') ?>" required maxlength="100"></div>

@@ -61,26 +61,50 @@ final class MedicamentoController extends Controlador
     {
         $id = (int) entrada('id_medicamento');
         $volver = $id > 0 ? "/medicamentos/{$id}/editar" : '/medicamentos/nuevo';
-        if (entrada('principio_activo') === '' || entrada('concentracion') === '' || entrada('presentacion') === '' || (int) entrada('id_producto') <= 0) {
-            return $this->rechazar('Indica el producto, el principio activo, la concentración y la presentación.', $volver);
+        $productoNuevo = $id === 0 && entrada('origen') === 'nuevo';
+        if (entrada('principio_activo') === '' || entrada('concentracion') === '' || entrada('presentacion') === '') {
+            return $this->rechazar('Indica el principio activo, la concentración y la presentación.', $volver);
+        }
+        if (!$productoNuevo && (int) entrada('id_producto') <= 0) {
+            return $this->rechazar('Elige el producto del inventario o crea uno nuevo.', $volver);
         }
         $horas = entrada('horas');
         if ($horas !== '' && !preg_match('/^([01]\d|2[0-3]):[0-5]\d(,([01]\d|2[0-3]):[0-5]\d)*$/', $horas)) {
             return $this->rechazar('Escribe las horas así: 06:00,14:00,22:00.', $volver);
         }
+        $ficha = [
+            'principio_activo' => entrada('principio_activo'),
+            'concentracion' => entrada('concentracion'),
+            'presentacion' => entrada('presentacion'),
+            'via_aplicacion' => entrada('via_aplicacion'),
+            'indicaciones_uso' => entrada('indicaciones_uso'),
+            'restricciones' => entrada('restricciones'),
+            'requiere_receta' => isset($_POST['requiere_receta']) ? 'S' : 'N',
+            'horas' => $horas,
+        ];
+        if ($productoNuevo) {
+            $producto = InventarioController::producto(false);
+            if (is_string($producto)) {
+                return $this->rechazar($producto, $volver);
+            }
+            return $this->ejecutar(
+                static fn() => (new Medicamento())->guardarConProducto([
+                    'codigo' => $producto['codigo'],
+                    'nombre_producto' => $producto['nombre'],
+                    'costo' => $producto['costo'],
+                    'precio_venta' => $producto['precio_venta'],
+                    'stock_minimo' => $producto['stock_minimo'],
+                    'se_vende' => $producto['se_vende'],
+                ] + $ficha),
+                'Medicamento guardado junto con su producto. Registra sus existencias con una entrada de inventario.',
+                '/medicamentos',
+            );
+        }
         return $this->ejecutar(
             static fn() => (new Medicamento())->guardar([
                 'id_medicamento' => $id > 0 ? $id : null,
                 'id_producto' => (int) entrada('id_producto'),
-                'principio_activo' => entrada('principio_activo'),
-                'concentracion' => entrada('concentracion'),
-                'presentacion' => entrada('presentacion'),
-                'via_aplicacion' => entrada('via_aplicacion'),
-                'indicaciones_uso' => entrada('indicaciones_uso'),
-                'restricciones' => entrada('restricciones'),
-                'requiere_receta' => isset($_POST['requiere_receta']) ? 'S' : 'N',
-                'horas' => $horas,
-            ]),
+            ] + $ficha),
             'Medicamento guardado.',
             $id > 0 ? "/medicamentos?id={$id}" : '/medicamentos',
         );

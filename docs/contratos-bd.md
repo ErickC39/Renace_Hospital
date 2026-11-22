@@ -205,11 +205,14 @@ Valores de `estado`: `EN_COBRO` y `PAGADO`. El monto de una deducción lo calcul
 
 | Objeto | Columnas o parámetros |
 |---|---|
-| `vw_inventario_producto` | `id_producto`, `codigo`, `nombre`, `categoria`, `uso`, `existencias`, `stock_minimo`, `costo`, `precio_venta` |
-| `vw_inventario_categoria` | `nombre` |
+| `vw_inventario_producto` | `id_producto`, `codigo`, `nombre`, `categoria`, `uso`, `existencias`, `stock_minimo`, `costo`, `precio_venta`, `id_categoria_producto`, `descripcion`, `se_vende` (`S`/`N`) |
+| `vw_inventario_categoria` | `nombre`, `id_categoria_producto`, `productos` |
 | `vw_inventario_movimiento` | `hora`, `tipo_movimiento` (`Entrada`, `Salida` o `Ajuste`), `producto`, `cantidad`, `observacion`, `es_hoy` |
-| `vw_inventario_proveedor` | `id_proveedor`, `nombre` |
+| `vw_inventario_proveedor` | `id_proveedor`, `nombre`, `cedula_juridica`, `telefono`, `correo`, `direccion` |
 | `pkg_inventario.sp_inventario_registrar_entrada` | IN `p_id_producto`, `p_id_proveedor`, `p_cantidad`, `p_observacion`, `p_id_usuario` |
+| `pkg_inventario.sp_producto_guardar` | IN `p_id_producto` (NULL = nuevo), `p_id_categoria_producto`, `p_codigo`, `p_nombre`, `p_descripcion`, `p_costo`, `p_precio_venta` (obligatorio si se vende), `p_stock_minimo`, `p_se_vende` (`S`/`N`) · OUT `p_id_guardado` |
+| `pkg_inventario.sp_proveedor_guardar` | IN `p_id_proveedor` (NULL = nuevo), `p_nombre`, `p_cedula_juridica` (10 dígitos; se guarda `3-101-123456`), `p_telefono` (8 dígitos o vacío), `p_correo`, `p_direccion` · OUT `p_id_guardado` |
+| `pkg_inventario.sp_categoria_producto_guardar` | IN `p_id_categoria_producto` (NULL = nueva), `p_nombre` · OUT `p_id_guardado` |
 
 > **Decisión para el equipo:** la imagen muestra el uso “Ambos”, pero `PRODUCTO.SE_VENDE` solo distingue sí o no. Con el modelo actual, `uso` solo puede ser `Venta` o `Uso médico`. Si quieren “Ambos”, hace falta otra columna en `PRODUCTO`. El código funciona con cualquiera de los dos casos.
 
@@ -284,8 +287,9 @@ Valores de `estado`: `PROGRAMADA`, `EN_ESPERA`, `EN_ATENCION`, `ATENDIDA`. `p_fe
 | `vw_medicamento_lista` | `id_medicamento`, `id_producto`, `codigo`, `principio_activo`, `concentracion`, `presentacion`, `via_aplicacion`, `indicaciones_uso`, `restricciones`, `requiere_receta`, `existencias` |
 | `vw_medicamento_hora` | `id_medicamento`, `hora` (`HH24:MI`) |
 | `vw_medicamento_tratamiento` | `id_medicamento`, `codigo_cie10`, `enfermedad`, `dosis`, `frecuencia_horas`, `duracion_dias` |
-| `vw_medicamento_producto` | `id_producto`, `nombre`. Productos de la categoría medicamento |
+| `vw_medicamento_producto` | `id_producto`, `nombre`. Productos de la categoría medicamento que todavía no tienen ficha |
 | `pkg_catalogo.sp_medicamento_guardar` | IN `p_id_medicamento` (NULL = nuevo), `p_id_producto`, `p_principio_activo`, `p_concentracion`, `p_presentacion`, `p_via_aplicacion`, `p_indicaciones_uso`, `p_restricciones`, `p_requiere_receta`, `p_horas` (`06:00,14:00,22:00`) |
+| `pkg_catalogo.sp_medicamento_con_producto` | IN `p_codigo`, `p_nombre_producto`, `p_costo`, `p_precio_venta`, `p_stock_minimo`, `p_se_vende` y los mismos datos de la ficha que `sp_medicamento_guardar` · OUT `p_id_medicamento`. Crea el producto en la categoría Medicamentos y la ficha en una sola operación |
 
 > **Para revisar en la BD:** el MER marca que `HORARIO_MEDICAMENTO` apunta a `MEDICAMENTO`, sin paciente ni receta. Por eso esta pantalla muestra horas de referencia; el horario real de cada paciente queda en la receta.
 
@@ -294,7 +298,8 @@ Valores de `estado`: `PROGRAMADA`, `EN_ESPERA`, `EN_ATENCION`, `ATENDIDA`. `p_fe
 | Objeto | Columnas o parámetros |
 |---|---|
 | `vw_enfermedad_tratamiento` | `id_enfermedad`, `codigo_cie10`, `enfermedad`, `categoria`, `id_medicamento`, `medicamento`, `dosis`, `frecuencia_horas`, `duracion_dias`. Una fila por tratamiento |
-| `vw_enfermedad_categoria` | `id_categoria_enfermedad`, `nombre` |
+| `vw_enfermedad_categoria` | `id_categoria_enfermedad`, `nombre`, `enfermedades` |
+| `pkg_catalogo.sp_categoria_enfermedad_guardar` | IN `p_id_categoria_enfermedad` (NULL = nueva), `p_nombre` · OUT `p_id_guardado` |
 | `pkg_catalogo.sp_enfermedad_guardar` | IN `p_id_categoria_enfermedad`, `p_codigo_cie10`, `p_nombre`, `p_descripcion`, `p_tratamiento_general`, `p_id_medicamento`, `p_dosis`, `p_frecuencia_horas`, `p_duracion_dias` · OUT `p_id_enfermedad` |
 
 ## Req. 10: Usuarios y roles

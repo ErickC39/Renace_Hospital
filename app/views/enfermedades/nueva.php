@@ -11,11 +11,20 @@ use App\Core\Csrf;
     <div class="actions"><a class="btn btn-outline" href="/enfermedades">Volver a enfermedades</a></div>
 </div>
 <section class="card formulario-corto">
+    <?php if ($categorias === [] || $medicamentos === []): ?>
+        <div class="notice warn mb-3"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i><span>
+            Para guardar una enfermedad hace falta
+            <?= $categorias === [] ? 'al menos una <a href="/enfermedades/categorias">categoría</a>' : '' ?>
+            <?= $categorias === [] && $medicamentos === [] ? 'y' : '' ?>
+            <?= $medicamentos === [] ? 'un <a href="/medicamentos/nuevo">medicamento</a> para el tratamiento' : '' ?>.
+        </span></div>
+    <?php endif; ?>
     <form method="post" action="/enfermedades/nueva">
         <?= Csrf::field() ?>
         <div class="fields f2">
             <div class="field"><label class="form-label" for="codigo_cie10">Código CIE-10</label><input class="form-control" id="codigo_cie10" name="codigo_cie10" required maxlength="20"></div>
-            <div class="field"><label class="form-label" for="id_categoria_enfermedad">Categoría</label><select class="form-select" id="id_categoria_enfermedad" name="id_categoria_enfermedad" required><?= opciones($categorias, 'id_categoria_enfermedad', 'nombre') ?></select></div>
+            <div class="field"><label class="form-label" for="id_categoria_enfermedad">Categoría</label><select class="form-select" id="id_categoria_enfermedad" name="id_categoria_enfermedad" required><option value="">Elige una categoría</option><?= opciones($categorias, 'id_categoria_enfermedad', 'nombre') ?></select>
+                <div class="hint"><a href="/enfermedades/categorias">Agregar o editar categorías</a></div></div>
         </div>
         <div class="field"><label class="form-label" for="nombre">Nombre</label><input class="form-control" id="nombre" name="nombre" required maxlength="200"></div>
         <div class="field"><label class="form-label" for="descripcion">Descripción</label><textarea class="form-control" id="descripcion" name="descripcion" rows="2" maxlength="1000"></textarea></div>

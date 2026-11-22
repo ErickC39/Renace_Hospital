@@ -15,7 +15,10 @@ $tiempo = static fn(int $h): string => $h === 168 ? 'cada semana' : "cada {$h} h
 <div class="title">
     <div><h1>Enfermedades</h1><p><strong><?= $enfermedades ?> enfermedades</strong> con su tratamiento, enlazadas a <?= $medicamentos ?> medicamentos. Busca por nombre, código o medicamento.</p></div>
     <?php if (Auth::can('catalogo.editar')): ?>
-        <div class="actions"><a class="btn btn-primary" href="/enfermedades/nueva"><i class="bi bi-plus-lg" aria-hidden="true"></i>Agregar enfermedad</a></div>
+        <div class="actions">
+            <a class="btn btn-outline" href="/enfermedades/categorias"><i class="bi bi-tags" aria-hidden="true"></i>Categorías</a>
+            <a class="btn btn-primary" href="/enfermedades/nueva"><i class="bi bi-plus-lg" aria-hidden="true"></i>Agregar enfermedad</a>
+        </div>
     <?php endif; ?>
 </div>
 

@@ -356,4 +356,41 @@
         recibido.addEventListener('input', actualizar);
         actualizar();
     }
+
+    // Opciones que muestran un grupo de campos y ocultan los demás (data-alternar="id del fieldset").
+    // Los campos ocultos quedan deshabilitados: ni se validan ni se envían.
+    document.querySelectorAll('input[data-alternar]').forEach(function (opcion) {
+        opcion.addEventListener('change', function () {
+            document.querySelectorAll('input[name="' + opcion.name + '"][data-alternar]').forEach(function (otra) {
+                const grupo = document.getElementById(otra.dataset.alternar);
+                grupo.hidden = !otra.checked;
+                grupo.disabled = !otra.checked;
+            });
+        });
+    });
+
+    // Un formulario se envía una sola vez: un doble clic (o volver a tocar mientras la página carga)
+    // repetía la operación; al cambiar la clave, el segundo envío ya no reconocía la clave vieja.
+    document.addEventListener('submit', function (evento) {
+        const form = evento.target;
+        if (evento.defaultPrevented || form.method.toLowerCase() !== 'post') {
+            return;
+        }
+        if (form.dataset.enviando === '1') {
+            evento.preventDefault();
+            return;
+        }
+        form.dataset.enviando = '1';
+        // Después de este turno, para que el botón presionado alcance a enviar su valor.
+        setTimeout(function () {
+            form.querySelectorAll('button[type=submit], button:not([type])').forEach(function (b) { b.disabled = true; });
+        }, 0);
+    });
+    // Al volver con el botón Atrás, el navegador puede mostrar la página guardada con los botones apagados.
+    window.addEventListener('pageshow', function () {
+        document.querySelectorAll('form[data-enviando]').forEach(function (form) {
+            delete form.dataset.enviando;
+            form.querySelectorAll('button[type=submit], button:not([type])').forEach(function (b) { b.disabled = false; });
+        });
+    });
 })();

@@ -71,4 +71,18 @@ final class Medicamento extends Modelo
         }
         $this->db->call('pkg_catalogo.sp_medicamento_guardar', $in);
     }
+
+    /**
+     * Crea el producto (categoría Medicamentos) y la ficha del medicamento en una sola operación.
+     *
+     * @param array<string, string|int|float|null> $datos Claves con el nombre del parámetro, sin p_.
+     */
+    public function guardarConProducto(array $datos): int
+    {
+        $in = [];
+        foreach ($datos as $campo => $valor) {
+            $in["p_{$campo}"] = $valor;
+        }
+        return (int) $this->db->call('pkg_catalogo.sp_medicamento_con_producto', $in, ['p_id_medicamento'])['p_id_medicamento'];
+    }
 }

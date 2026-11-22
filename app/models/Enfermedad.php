@@ -28,7 +28,7 @@ final class Enfermedad extends Modelo
     /** @return list<array<string, mixed>> */
     public function categorias(): array
     {
-        return $this->db->select('SELECT id_categoria_enfermedad, nombre FROM vw_enfermedad_categoria ORDER BY nombre');
+        return $this->db->select('SELECT id_categoria_enfermedad, nombre, enfermedades FROM vw_enfermedad_categoria ORDER BY nombre');
     }
 
     /** @param array<string, string|int> $datos Claves con el nombre del parámetro, sin p_. */
@@ -39,5 +39,15 @@ final class Enfermedad extends Modelo
             $in["p_{$campo}"] = $valor;
         }
         return (int) $this->db->call('pkg_catalogo.sp_enfermedad_guardar', $in, ['p_id_enfermedad'])['p_id_enfermedad'];
+    }
+
+    /** Crea (sin id) o le cambia el nombre a una categoría de enfermedad. */
+    public function guardarCategoria(?int $id, string $nombre): int
+    {
+        return (int) $this->db->call(
+            'pkg_catalogo.sp_categoria_enfermedad_guardar',
+            ['p_id_categoria_enfermedad' => $id, 'p_nombre' => $nombre],
+            ['p_id_guardado'],
+        )['p_id_guardado'];
     }
 }
