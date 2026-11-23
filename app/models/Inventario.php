@@ -65,13 +65,13 @@ final class Inventario extends Modelo
      */
     public function guardarProducto(?int $id, array $datos): int
     {
-        return $this->guardar('pkg_inventario.sp_producto_guardar', ['p_id_producto' => $id] + $this->conPrefijo($datos));
+        return $this->guardar('pkg_inventario.sp_producto_guardar', ['p_id_producto' => $id] + self::conPrefijo($datos));
     }
 
     /** @param array{nombre: string, cedula_juridica: string, telefono: string, correo: string, direccion: string} $datos */
     public function guardarProveedor(?int $id, array $datos): int
     {
-        return $this->guardar('pkg_inventario.sp_proveedor_guardar', ['p_id_proveedor' => $id] + $this->conPrefijo($datos));
+        return $this->guardar('pkg_inventario.sp_proveedor_guardar', ['p_id_proveedor' => $id] + self::conPrefijo($datos));
     }
 
     public function guardarCategoria(?int $id, string $nombre): int
@@ -83,18 +83,5 @@ final class Inventario extends Modelo
     private function guardar(string $procedimiento, array $in): int
     {
         return (int) $this->db->call($procedimiento, $in, ['p_id_guardado'])['p_id_guardado'];
-    }
-
-    /**
-     * @param array<string, mixed> $datos
-     * @return array<string, mixed>
-     */
-    private function conPrefijo(array $datos): array
-    {
-        $in = [];
-        foreach ($datos as $campo => $valor) {
-            $in["p_{$campo}"] = $valor;
-        }
-        return $in;
     }
 }

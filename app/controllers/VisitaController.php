@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Controlador;
 use App\Core\Documento;
+use App\Core\Formato;
 use App\Core\Response;
 use App\Core\View;
 use App\Models\Persona;
@@ -47,6 +48,9 @@ final class VisitaController extends Controlador
         $idPersona = $persona !== null ? (int) $persona['id_persona'] : 0;
         if ($idPersona === 0 && (entrada('nombre') === '' || entrada('apellidos') === '')) {
             return $this->rechazar('Esa persona no está registrada: indica su nombre y apellidos.', '/visitas?documento=' . urlencode($documento));
+        }
+        if ($idPersona === 0 && (!Formato::esNombre(entrada('nombre')) || !Formato::esNombre(entrada('apellidos')))) {
+            return $this->rechazar('El nombre y los apellidos solo llevan letras, sin números ni símbolos.', '/visitas?documento=' . urlencode($documento));
         }
         $tipo = entrada('tipo_documento');
         $nuevo = $idPersona === 0 ? Documento::normalizar($tipo, $documento) : null;

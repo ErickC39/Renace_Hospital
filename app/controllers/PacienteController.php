@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Controlador;
 use App\Core\Documento;
+use App\Core\Formato;
 use App\Core\Response;
 use App\Core\View;
 use App\Models\Paciente;
@@ -56,6 +57,18 @@ final class PacienteController extends Controlador
             $datos[$campo] = entrada($campo);
         }
         $datos['numero_documento'] = $documento;
+        if (!Formato::esNombre($datos['nombre']) || !Formato::esNombre($datos['apellidos'])
+            || ($datos['contacto_emergencia'] !== '' && !Formato::esNombre($datos['contacto_emergencia']))) {
+            return $this->rechazar('Los nombres solo llevan letras, sin números ni símbolos.', '/pacientes/nuevo');
+        }
+        if (!isset(EmpleadoController::SEXOS[$datos['sexo']])) {
+            return $this->rechazar('Elige el género del paciente.', '/pacientes/nuevo');
+        }
+        $telefono = Formato::telefono($datos['telefono_emergencia']);
+        if ($telefono === null) {
+            return $this->rechazar('El teléfono de emergencia debe tener 8 dígitos, por ejemplo 8888-8888.', '/pacientes/nuevo');
+        }
+        $datos['telefono_emergencia'] = $telefono;
         return $this->ejecutar(
             static fn() => (new Paciente())->registrar($datos, (int) Auth::user()['id_usuario']),
             'Paciente registrado. Su historial se llenará con su primera cita.',

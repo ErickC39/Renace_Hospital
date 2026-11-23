@@ -92,8 +92,30 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
             <?php elseif ($form['documento'] !== ''): ?>
                 <div class="notice warn mb-field"><i class="bi bi-person-x" aria-hidden="true"></i><span>Esa cédula no está registrada. <a href="/pacientes/nuevo">Registra al paciente</a> primero.</span></div>
             <?php endif; ?>
+            <?php
+            $especialidades = array_column($medicos, 'especialidad', 'id_especialidad');
+            asort($especialidades);
+            $especialidadElegida = '';
+            foreach ($medicos as $m) {
+                if ((int) $m['id_medico'] === $form['id_medico']) {
+                    $especialidadElegida = (string) ($m['id_especialidad'] ?? '');
+                }
+            }
+            ?>
+            <div class="field"><label class="form-label" for="especialidad">Especialidad que necesita</label>
+                <select class="form-select" id="especialidad" data-filtra="id_medico" <?= $confirmando ? 'disabled' : '' ?>>
+                    <option value="">Todas las especialidades</option>
+                    <?php foreach ($especialidades as $idEsp => $nombreEsp): ?>
+                        <option value="<?= e($idEsp) ?>" <?= (string) $idEsp === $especialidadElegida ? 'selected' : '' ?>><?= e($nombreEsp) ?></option>
+                    <?php endforeach; ?>
+                </select></div>
             <div class="field"><label class="form-label" for="id_medico">Médico</label>
-                <select class="form-select" id="id_medico" name="id_medico" <?= $confirmando ? 'disabled' : '' ?> required><?= opciones($medicos, 'id_medico', 'nombre', $form['id_medico']) ?></select></div>
+                <select class="form-select" id="id_medico" name="id_medico" <?= $confirmando ? 'disabled' : '' ?> required>
+                    <option value="">Elige un médico</option>
+                    <?php foreach ($medicos as $m): ?>
+                        <option value="<?= e($m['id_medico']) ?>" data-grupo="<?= e($m['id_especialidad'] ?? '') ?>" <?= (int) $m['id_medico'] === $form['id_medico'] ? 'selected' : '' ?>><?= e($m['nombre']) ?></option>
+                    <?php endforeach; ?>
+                </select></div>
             <div class="fields f2">
                 <div class="field"><label class="form-label" for="fecha">Fecha</label><input class="form-control" id="fecha" name="fecha" <?= $confirmando ? 'disabled' : '' ?> type="date" value="<?= e($form['fecha']) ?>" required></div>
                 <div class="field"><label class="form-label" for="hora">Hora</label><input class="form-control <?= $comprobando && !$horaLibre ? 'is-invalid' : '' ?>" id="hora" name="hora" <?= $confirmando ? 'disabled' : '' ?> type="time" step="1800" value="<?= e($form['hora']) ?>" required></div>

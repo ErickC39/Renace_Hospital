@@ -57,7 +57,7 @@ final class Cita extends Modelo
     /** @return list<array<string, mixed>> */
     public function medicos(): array
     {
-        return $this->db->select('SELECT id_medico, nombre FROM vw_cita_medico ORDER BY nombre');
+        return $this->db->select('SELECT id_medico, nombre, id_especialidad, especialidad FROM vw_cita_medico ORDER BY especialidad, nombre');
     }
 
     /** @return list<string> Horas libres de ese médico ese día. */

@@ -369,6 +369,23 @@
         });
     });
 
+    // Un select con data-filtra="id de otro select" deja ver en el otro solo las opciones de su grupo
+    // (data-grupo). Si la opción elegida queda fuera, se borra la elección.
+    document.querySelectorAll('select[data-filtra]').forEach(function (filtro) {
+        const destino = document.getElementById(filtro.dataset.filtra);
+        if (!destino) { return; }
+        const aplicar = function () {
+            Array.from(destino.options).forEach(function (o) {
+                const fuera = filtro.value !== '' && o.dataset.grupo !== undefined && o.dataset.grupo !== filtro.value;
+                o.hidden = fuera;
+                o.disabled = fuera;
+            });
+            if (destino.selectedOptions[0] && destino.selectedOptions[0].disabled) { destino.value = ''; }
+        };
+        filtro.addEventListener('change', aplicar);
+        aplicar();
+    });
+
     // Un formulario se envía una sola vez: un doble clic (o volver a tocar mientras la página carga)
     // repetía la operación; al cambiar la clave, el segundo envío ya no reconocía la clave vieja.
     document.addEventListener('submit', function (evento) {

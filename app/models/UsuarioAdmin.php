@@ -11,7 +11,6 @@ final class UsuarioAdmin extends Modelo
 {
     private const COLUMNAS = 'id_usuario, nombre_usuario, nombre_completo, puesto, id_rol, rol, estado, ultimo_acceso';
 
-
     /** @return list<array<string, mixed>> */
     public function lista(): array
     {

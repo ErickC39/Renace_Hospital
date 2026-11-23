@@ -13,8 +13,12 @@ use App\Config\Database;
  */
 final class App
 {
-    /** Códigos de Oracle cuando la vista o el paquete de un módulo todavía no existe. */
-    private const OBJETO_BD_AUSENTE = [942, 4043, 6550];
+    /**
+     * Códigos de Oracle cuando la base todavía no tiene lo que pide el módulo: falta la vista (942, 4043),
+     * el procedimiento (6550) o una columna nueva de la vista (904). Pasa si el aplicativo se publica
+     * antes que su script.
+     */
+    private const OBJETO_BD_AUSENTE = [904, 942, 4043, 6550];
 
     /** @param Router $router Rutas ya cargadas desde app/routes.php. */
     public function __construct(private Router $router)

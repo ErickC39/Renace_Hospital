@@ -54,7 +54,7 @@ abstract class Controlador
     }
 
     /** Deja un solo mensaje para la siguiente página: el nuevo reemplaza al que hubiera quedado sin mostrar. */
-    private static function avisar(string $tipo, string $mensaje): void
+    protected static function avisar(string $tipo, string $mensaje): void
     {
         Session::pull('flash_ok');
         Session::pull('flash_error');

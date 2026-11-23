@@ -13,6 +13,9 @@ final class BusinessException extends \RuntimeException
     /** Errores de Oracle provocados por los datos enviados: se explican sin mostrar detalle técnico. */
     private const ERRORES_DE_DATOS = [
         1 => 'Ese registro ya existe.',
+        1400 => 'Falta un dato obligatorio.',
+        2290 => 'Uno de los datos no tiene un valor permitido.',
+        2292 => 'No se puede quitar: otros registros dependen de él.',
         1403 => 'Uno de los datos seleccionados ya no existe.',
         2291 => 'Uno de los datos seleccionados ya no existe.',
         1438 => 'Uno de los datos es demasiado grande.',
@@ -53,22 +56,5 @@ final class BusinessException extends \RuntimeException
     public function __construct(string $message, public readonly int $oracleCode)
     {
         parent::__construct($message, $oracleCode);
-    }
-
-    /** Área del sistema a la que pertenece el código de error (útil para registros y pruebas). */
-    public function tema(): string
-    {
-        $n = abs($this->oracleCode);
-        return match (true) {
-            $n <= 20099 => 'seguridad',
-            $n <= 20199 => 'visitas',
-            $n <= 20299 => 'citas',
-            $n <= 20399 => 'pacientes',
-            $n <= 20449 => 'nacimientos',
-            $n <= 20499 => 'medicamentos',
-            $n <= 20599 => 'ventas',
-            $n <= 20699 => 'inventario',
-            default => 'general',
-        };
     }
 }

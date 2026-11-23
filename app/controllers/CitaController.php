@@ -55,7 +55,7 @@ final class CitaController extends Controlador
             static fn() => (new Cita())->agendar(
                 (int) $persona['id_persona'],
                 (int) entrada('id_medico'),
-                entrada('fecha') . ' ' . entrada('hora'),
+                "{$fecha} {$hora}",
                 (int) Auth::user()['id_usuario'],
             ),
             "Cita agendada para el {$fecha} a las {$hora}. Se actualizó la próxima revisión del paciente.",

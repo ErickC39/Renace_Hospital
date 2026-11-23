@@ -39,7 +39,7 @@ $seCrea = [
                 <div class="fields f4">
                     <div class="field"><label class="form-label" for="nombre_bebe">Nombre del bebé</label><input class="form-control" id="nombre_bebe" name="nombre_bebe" required maxlength="100"></div>
                     <div class="field"><label class="form-label" for="apellidos_bebe">Apellidos</label><input class="form-control" id="apellidos_bebe" name="apellidos_bebe" required maxlength="150"></div>
-                    <div class="field"><span class="form-label d-block">Sexo</span><div class="seg"><label><input type="radio" name="sexo" value="F" required><span>Fem.</span></label><label><input type="radio" name="sexo" value="M"><span>Masc.</span></label></div></div>
+                    <div class="field"><span class="form-label d-block">Género</span><div class="seg"><label><input type="radio" name="sexo" value="F" required><span>Fem.</span></label><label><input type="radio" name="sexo" value="M"><span>Masc.</span></label></div></div>
                     <div class="field"><label class="form-label" for="fecha_hora">Fecha y hora</label><input class="form-control" id="fecha_hora" name="fecha_hora" type="datetime-local" required></div>
                 </div>
                 <div class="fields f4">

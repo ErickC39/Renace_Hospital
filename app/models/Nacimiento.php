@@ -33,10 +33,6 @@ final class Nacimiento extends Modelo
     /** @param array<string, string> $datos Claves con el nombre del parámetro, sin p_. */
     public function registrar(array $datos, int $idUsuario): int
     {
-        $in = ['p_id_usuario' => $idUsuario];
-        foreach ($datos as $campo => $valor) {
-            $in["p_{$campo}"] = $valor;
-        }
-        return (int) $this->db->call('pkg_nacimiento.sp_nacimiento_registrar', $in, ['p_id_paciente'])['p_id_paciente'];
+        return (int) $this->db->call('pkg_nacimiento.sp_nacimiento_registrar', ['p_id_usuario' => $idUsuario] + self::conPrefijo($datos), ['p_id_paciente'])['p_id_paciente'];
     }
 }

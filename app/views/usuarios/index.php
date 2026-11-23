@@ -42,7 +42,7 @@ $permisosDelRol = $matriz[$rolElegido] ?? [];
                         <td><?= e(Etiquetas::rol((string) $u['rol'])) ?></td>
                         <td><?= $u['estado'] === 'ACTIVO' ? pill('Activo', 'ok') : pill('Inactivo', 'neu') ?></td>
                         <td class="num"><?= $u['ultimo_acceso'] ? e($u['ultimo_acceso']) : '<span class="muted">—</span>' ?></td>
-                        <td class="num"><a class="btn btn-outline btn-sm" href="/usuarios/<?= e($u['id_usuario']) ?>/editar" aria-label="Editar a <?= e($u['nombre_completo']) ?>"><i class="bi bi-pencil"></i>Editar</a></td>
+                        <td class="num"><?php if ((int) $u['id_usuario'] === (int) \App\Core\Auth::user()['id_usuario']): ?><?= pill('Tú', 'info') ?><?php else: ?><a class="btn btn-outline btn-sm" href="/usuarios/<?= e($u['id_usuario']) ?>/editar" aria-label="Editar a <?= e($u['nombre_completo']) ?>"><i class="bi bi-pencil"></i>Editar</a><?php endif; ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

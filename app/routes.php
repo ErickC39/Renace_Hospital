@@ -14,9 +14,11 @@ use App\Controllers\BitacoraController;
 use App\Controllers\CitaController;
 use App\Controllers\EmpleadoController;
 use App\Controllers\EnfermedadController;
+use App\Controllers\HabitacionController;
 use App\Controllers\HomeController;
 use App\Controllers\InventarioController;
 use App\Controllers\MedicamentoController;
+use App\Controllers\MedicoController;
 use App\Controllers\MiClaveController;
 use App\Controllers\NacimientoController;
 use App\Controllers\PacienteController;
@@ -78,6 +80,23 @@ return static function (Router $router): void {
     // Prioridad de empleados
     $router->get('/prioridad', [PrioridadController::class, 'index'], 'cita.agendar');
     $router->post('/prioridad', [PrioridadController::class, 'aplicar'], 'cita.agendar');
+
+    // Habitaciones: verlas, asignarlas (ingreso, salida y estado) y registrarlas (administración)
+    $router->get('/habitaciones', [HabitacionController::class, 'index'], 'habitacion.ver');
+    $router->post('/habitaciones', [HabitacionController::class, 'crear'], 'usuario.administrar');
+    $router->post('/habitaciones/estadias/{id}/salida', [HabitacionController::class, 'darSalida'], 'habitacion.asignar');
+    $router->post('/habitaciones/{id}', [HabitacionController::class, 'editar'], 'usuario.administrar');
+    $router->post('/habitaciones/{id}/ingreso', [HabitacionController::class, 'ingresar'], 'habitacion.asignar');
+    $router->post('/habitaciones/{id}/estado', [HabitacionController::class, 'cambiarEstado'], 'habitacion.asignar');
+
+    // Médicos y especialidades: los ve quien ve las citas; los administra quien administra usuarios
+    $router->get('/medicos', [MedicoController::class, 'index'], 'cita.ver');
+    $router->post('/medicos', [MedicoController::class, 'registrar'], 'usuario.administrar');
+    $router->post('/medicos/especialidades', [MedicoController::class, 'crearEspecialidad'], 'usuario.administrar');
+    $router->post('/medicos/especialidades/{id}', [MedicoController::class, 'editarEspecialidad'], 'usuario.administrar');
+    $router->post('/medicos/horarios/{id}/quitar', [MedicoController::class, 'quitarHorario'], 'usuario.administrar');
+    $router->post('/medicos/{id}', [MedicoController::class, 'guardar'], 'usuario.administrar');
+    $router->post('/medicos/{id}/horario', [MedicoController::class, 'agregarHorario'], 'usuario.administrar');
 
     // Medicamentos
     $router->get('/medicamentos', [MedicamentoController::class, 'index'], 'catalogo.ver');

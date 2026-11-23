@@ -82,6 +82,15 @@ final class AppTest extends TestCase
         $this->assertStringNotContainsString('ORA-00942', $res->body);
     }
 
+    public function testUnaColumnaQueTodaviaNoExisteTambienEsModuloNoDisponible(): void
+    {
+        $router = (new Router())->get('/sin-columna', [ControladorSinBd::class, 'sinColumna']);
+        $res = (new App($router))->handle('GET', '/sin-columna');
+
+        $this->assertSame(503, $res->status);
+        $this->assertStringNotContainsString('SE_VENDE', $res->body);
+    }
+
     public function testPagina404Amigable(): void
     {
         $res = (new App(new Router()))->handle('GET', '/no-existe');

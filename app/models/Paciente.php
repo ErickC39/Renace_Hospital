@@ -59,10 +59,6 @@ final class Paciente extends Modelo
     /** @param array<string, string> $datos Claves con el nombre del parámetro, sin p_. */
     public function registrar(array $datos, int $idUsuario): int
     {
-        $in = ['p_id_usuario' => $idUsuario];
-        foreach ($datos as $campo => $valor) {
-            $in["p_{$campo}"] = $valor;
-        }
-        return (int) $this->db->call('pkg_paciente.sp_paciente_registrar', $in, ['p_id_paciente'])['p_id_paciente'];
+        return (int) $this->db->call('pkg_paciente.sp_paciente_registrar', ['p_id_usuario' => $idUsuario] + self::conPrefijo($datos), ['p_id_paciente'])['p_id_paciente'];
     }
 }

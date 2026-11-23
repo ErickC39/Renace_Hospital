@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Controlador;
 use App\Core\Documento;
+use App\Core\Formato;
 use App\Core\HttpException;
 use App\Core\Response;
 use App\Core\View;
@@ -65,12 +66,13 @@ final class EmpleadoController extends Controlador
                 return $this->rechazar($revision, '/empleados');
             }
         }
+        // Nadie se administra a sí mismo: su ficha la edita otro administrador.
+        if ($empleado['nombre_usuario'] !== null && $empleado['nombre_usuario'] === Auth::user()['nombre_usuario']) {
+            return $this->rechazar('No puedes editar tu propia ficha. Pídeselo a otro administrador.', '/empleados');
+        }
         $datos += $documento;  // si el documento llega vacío, Oracle conserva el que tenía
         $estado = entrada('estado') === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO';
         $inactiva = $estado === 'INACTIVO' && $empleado['estado'] !== 'INACTIVO';
-        if ($inactiva && $empleado['nombre_usuario'] === Auth::user()['nombre_usuario']) {
-            return $this->rechazar('No puedes inactivarte a ti mismo. Pídeselo a otro administrador.', '/empleados');
-        }
         if ($inactiva && !$this->claveConfirmada()) {
             return $this->rechazar('La clave de confirmación no es correcta. El empleado no se inactivó.', '/empleados');
         }
@@ -121,8 +123,16 @@ final class EmpleadoController extends Controlador
             'fecha_ingreso' => entrada('fecha_ingreso'),
         ];
         if ($datos['nombre'] === '' || $datos['apellidos'] === '' || $datos['id_puesto'] <= 0 || !isset(self::SEXOS[$datos['sexo']])) {
-            return 'Indica el nombre, los apellidos, el sexo y el puesto.';
+            return 'Indica el nombre, los apellidos, el género y el puesto.';
         }
+        if (!Formato::esNombre($datos['nombre']) || !Formato::esNombre($datos['apellidos'])) {
+            return 'El nombre y los apellidos solo llevan letras, sin números ni símbolos.';
+        }
+        $telefono = Formato::telefono($datos['telefono']);
+        if ($telefono === null) {
+            return 'El teléfono debe tener 8 dígitos, por ejemplo 8888-8888.';
+        }
+        $datos['telefono'] = $telefono;
         if (!$this->fechaValida($datos['fecha_ingreso']) || ($datos['fecha_nacimiento'] !== '' && !$this->fechaValida($datos['fecha_nacimiento']))) {
             return 'Revisa las fechas: deben existir y no pueden ser futuras.';
         }

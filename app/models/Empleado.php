@@ -44,7 +44,7 @@ final class Empleado extends Modelo
     {
         return (int) $this->db->call(
             'pkg_empleado.sp_empleado_registrar',
-            ['p_numero_documento' => $documento] + self::parametros($datos),
+            ['p_numero_documento' => $documento] + self::conPrefijo($datos),
             ['p_id_empleado'],
         )['p_id_empleado'];
     }
@@ -54,7 +54,7 @@ final class Empleado extends Modelo
     {
         $this->db->call(
             'pkg_empleado.sp_empleado_editar',
-            ['p_id_empleado' => $id] + self::parametros($datos) + ['p_estado' => $estado],
+            ['p_id_empleado' => $id] + self::conPrefijo($datos) + ['p_estado' => $estado],
         );
     }
 
@@ -70,18 +70,5 @@ final class Empleado extends Modelo
     public function editarPuesto(int $id, string $nombre, float $salarioHora): void
     {
         $this->db->call('pkg_empleado.sp_puesto_editar', ['p_id_puesto' => $id, 'p_nombre' => $nombre, 'p_salario_hora' => $salarioHora]);
-    }
-
-    /**
-     * @param array<string, string|int> $datos
-     * @return array<string, string|int>
-     */
-    private static function parametros(array $datos): array
-    {
-        $parametros = [];
-        foreach ($datos as $campo => $valor) {
-            $parametros["p_{$campo}"] = $valor;
-        }
-        return $parametros;
     }
 }

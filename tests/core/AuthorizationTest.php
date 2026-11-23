@@ -65,8 +65,8 @@ final class AuthorizationTest extends TestCase
         $recepcion = array_column(Menu::para($permisosRecepcion), 'texto');
         $auditor = array_column(Menu::para($permisosAuditor), 'texto');
 
-        $this->assertSame(['Citas', 'Pacientes', 'Prioridad de empleados', 'Visitantes'], $recepcion);
-        $this->assertSame(['Citas', 'Visitantes', 'Ventas', 'Inventario', 'Bitácoras'], $auditor);
+        $this->assertSame(['Citas', 'Médicos', 'Pacientes', 'Prioridad de empleados', 'Visitantes'], $recepcion);
+        $this->assertSame(['Citas', 'Médicos', 'Visitantes', 'Ventas', 'Inventario', 'Bitácoras'], $auditor);
     }
 
     public function testElLayoutMuestraSoloElMenuDelRol(): void

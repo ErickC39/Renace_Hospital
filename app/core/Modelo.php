@@ -19,4 +19,19 @@ abstract class Modelo
     {
         $this->db = $db ?? Database::connection();
     }
+
+    /**
+     * Pone p_ delante de cada clave: ['nombre' => 'Ana'] → ['p_nombre' => 'Ana'], como los parámetros de los paquetes.
+     *
+     * @param array<string, mixed> $datos
+     * @return array<string, mixed>
+     */
+    protected static function conPrefijo(array $datos): array
+    {
+        $parametros = [];
+        foreach ($datos as $campo => $valor) {
+            $parametros["p_{$campo}"] = $valor;
+        }
+        return $parametros;
+    }
 }

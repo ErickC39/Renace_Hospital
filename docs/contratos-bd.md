@@ -239,7 +239,7 @@ Valores de `estado`: `EN_COBRO` y `PAGADO`. El monto de una deducción lo calcul
 | `vw_cita_sala_espera` | `id_cita`, `paciente`, `medico`, `tipo_cita`, `hora_programada`, `minutos_espera`, `cita_previa_demora` (`S`/`N`) |
 | `vw_cita_proxima_llegada` | `id_cita`, `paciente`, `medico`, `hora_programada` |
 | `vw_cita_en_atencion` | `id_cita`, `paciente`, `medico`, `tipo_cita`, `fecha_agenda`, `hora_llegada`, `minutos_espera`, `hora_inicio` |
-| `vw_cita_medico` | `id_medico`, `nombre` (“Dr. Javier Mora · Cardiología”) |
+| `vw_cita_medico` | `id_medico`, `nombre` (“Dr. Javier Mora · Cardiología”), `id_especialidad`, `especialidad` (script 240: el formulario filtra a los médicos por especialidad) |
 | `vw_cita_espacio_libre` | `id_medico`, `fecha` (`YYYY-MM-DD`), `hora` (`HH24:MI`) |
 | `pkg_cita.sp_cita_agendar` | IN `p_id_persona`, `p_id_medico`, `p_fecha_hora`, `p_id_usuario` · OUT `p_id_cita`. Vuelve a comprobar el espacio y actualiza la próxima revisión |
 | `pkg_cita.sp_cita_registrar_llegada` | IN `p_id_cita` |
@@ -247,6 +247,40 @@ Valores de `estado`: `EN_COBRO` y `PAGADO`. El monto de una deducción lo calcul
 | `pkg_cita.sp_cita_registrar_resultado` | IN `p_id_cita`, `p_observacion`, `p_indicaciones`, `p_requiere_control`, `p_fecha_control`, `p_detalle_control` |
 
 Valores de `estado`: `PROGRAMADA`, `EN_ESPERA`, `EN_ATENCION`, `ATENDIDA`. `p_fecha_hora` llega como texto `YYYY-MM-DD HH24:MI`.
+
+## Req. 11: Habitaciones · `pkg_habitacion` · errores -20970 a -20982 (script 250)
+
+Tablas nuevas: `LISTA_TIPO_HABITACION`, `HABITACION` (estado `DISPONIBLE`, `OCUPADA`, `LIMPIEZA` o `MANTENIMIENTO`) y `HOSPITALIZACION` (cada estadía). Una habitación ocupada no se asigna otra vez: lo revisa el paquete y lo garantiza el índice único `UK_48_01` (una estadía abierta por habitación; `UK_48_02`, una por paciente).
+
+Pantalla `/habitaciones`: verla pide `habitacion.ver`; ingresar, dar salida y cambiar el estado pide `habitacion.asignar`; registrar y editar habitaciones pide `usuario.administrar`.
+
+| Objeto | Columnas o parámetros |
+|---|---|
+| `vw_habitacion_lista` | `id_habitacion`, `numero`, `id_tipo_habitacion`, `tipo`, `id_area`, `area`, `estado`, `id_hospitalizacion`, `paciente`, `numero_documento`, `fecha_ingreso` (`YYYY-MM-DD HH24:MI`), `dias`, `motivo`, `responsable` (los datos del paciente solo si está ocupada) |
+| `vw_habitacion_historial` | `id_hospitalizacion`, `numero`, `paciente`, `numero_documento`, `fecha_ingreso`, `fecha_salida`, `motivo`, `observacion_salida`, `responsable_ingreso`, `responsable_salida` |
+| `vw_habitacion_tipo` | `id_tipo_habitacion`, `nombre`, `descripcion`, `habitaciones` |
+| `vw_habitacion_area` | `id_area`, `nombre` |
+| `pkg_habitacion.sp_habitacion_guardar` | IN `p_id_habitacion` (NULL = nueva), `p_numero` (hasta 10 letras, números o guiones), `p_id_tipo_habitacion`, `p_id_area` (opcional) · OUT `p_id_guardado` |
+| `pkg_habitacion.sp_habitacion_estado` | IN `p_id_habitacion`, `p_estado` (`DISPONIBLE`, `LIMPIEZA` o `MANTENIMIENTO`; no si está ocupada) |
+| `pkg_habitacion.sp_hospitalizacion_ingresar` | IN `p_id_habitacion`, `p_id_persona`, `p_motivo`, `p_id_usuario` (su empleado queda como responsable) · OUT `p_id_hospitalizacion` |
+| `pkg_habitacion.sp_hospitalizacion_salida` | IN `p_id_hospitalizacion`, `p_observacion`, `p_dejar_en` (`DISPONIBLE` o `LIMPIEZA`), `p_id_usuario` |
+
+## Req. 12: Médicos y especialidades · `pkg_medico` · errores -20950 a -20967 (script 240)
+
+Pantalla `/medicos`: la ve quien tiene `cita.ver`; registrar médicos, armar horarios y editar especialidades pide `usuario.administrar`. El estado activo o inactivo del médico es el de su empleado.
+
+| Objeto | Columnas o parámetros |
+|---|---|
+| `vw_medico_lista` | `id_medico`, `id_empleado`, `nombre`, `numero_documento`, `id_especialidad`, `especialidad`, `codigo_colegio`, `estado`, `bloques_horario`, `citas_proximas`, `citas_hoy` |
+| `vw_medico_horario` | `id_horario_medico`, `id_medico`, `dia_semana` (1 = lunes), `dia`, `hora_inicio`, `hora_fin` (`HH24:MI`), `duracion_minutos`, `cupo`, `id_consultorio`, `consultorio` |
+| `vw_medico_especialidad` | `id_especialidad`, `nombre`, `descripcion`, `medicos` (activos) |
+| `vw_medico_consultorio` | `id_consultorio`, `codigo`, `nombre` (solo activos) |
+| `vw_medico_empleado_libre` | `id_empleado`, `nombre`, `puesto` (activos que todavía no son médicos) |
+| `vw_medico_cita` | `id_medico`, `fecha`, `hora`, `paciente`, `tipo_cita`, `estado` (de hoy en adelante) |
+| `pkg_medico.sp_medico_guardar` | IN `p_id_medico` (NULL = registrar), `p_id_empleado` (solo al registrar), `p_id_especialidad`, `p_codigo_colegio` (3 a 30 letras, números o guiones; se guarda en mayúsculas) · OUT `p_id_guardado` |
+| `pkg_medico.sp_especialidad_guardar` | IN `p_id_especialidad` (NULL = nueva), `p_nombre`, `p_descripcion` · OUT `p_id_guardado` |
+| `pkg_medico.sp_horario_guardar` | IN `p_id_horario_medico` (NULL = nuevo), `p_id_medico`, `p_id_consultorio`, `p_dia_semana`, `p_hora_inicio`, `p_hora_fin` (`HH24:MI`), `p_duracion_minutos` (5 a 240) · OUT `p_id_guardado`. Calcula el cupo; rechaza bloques que se crucen con otro del mismo médico o con el mismo consultorio de otro médico |
+| `pkg_medico.sp_horario_quitar` | IN `p_id_horario_medico`. Las citas ya agendadas se conservan |
 
 ## Req. 5: Pacientes
 

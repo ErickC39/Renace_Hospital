@@ -337,7 +337,7 @@ a{text-decoration-thickness:1px;text-underline-offset:2px}
 @keyframes abre-ficha{from{opacity:0;transform:scale(.97)}}
 .ficha::backdrop{background:rgba(0,0,0,.45)}
 .ficha-chica{width:min(420px,calc(100vw - 32px))}
-.ficha-ver,.ficha-editar{padding:22px 24px}
+.ficha-ver,.ficha-editar,.ficha-cuerpo{padding:22px 24px}
 .ficha-cabeza{display:flex;gap:14px;align-items:flex-start;margin-bottom:16px}
 .ficha-cabeza>div{min-width:0}.ficha-cabeza h2{font-size:20px;margin:0 0 2px}
 .ficha-cabeza .ini{width:56px;height:56px;border-radius:50%;background:color-mix(in srgb,var(--p) 18%,var(--bg));color:var(--p);display:grid;place-items:center;font-weight:700;font-size:20px;flex:none}

@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controlador;
+use App\Core\Formato;
 use App\Core\Response;
 use App\Core\View;
 use App\Models\Nacimiento;
@@ -37,6 +38,12 @@ final class NacimientoController extends Controlador
             if ($campo !== 'observacion' && $datos[$campo] === '') {
                 return $this->rechazar('Completa todos los datos del nacimiento. Solo la observación es opcional.', '/nacimientos');
             }
+        }
+        if (!Formato::esNombre($datos['nombre_bebe']) || !Formato::esNombre($datos['apellidos_bebe'])) {
+            return $this->rechazar('El nombre y los apellidos del bebé solo llevan letras, sin números ni símbolos.', '/nacimientos');
+        }
+        if (!isset(EmpleadoController::SEXOS[$datos['sexo']])) {
+            return $this->rechazar('Elige el género del bebé.', '/nacimientos');
         }
         foreach (['semanas_gestacion', 'peso_gr', 'talla_cm'] as $medida) {
             if (!is_numeric($datos[$medida]) || (float) $datos[$medida] <= 0) {

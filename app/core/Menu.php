@@ -13,7 +13,9 @@ final class Menu
     /** @var list<array{grupo:string, texto:string, ruta:string, icono:string, permiso:string}> */
     public const OPCIONES = [
         ['grupo' => 'Atención', 'texto' => 'Citas', 'ruta' => '/citas', 'icono' => 'calendar2-check', 'permiso' => 'cita.ver'],
+        ['grupo' => 'Atención', 'texto' => 'Médicos', 'ruta' => '/medicos', 'icono' => 'person-check', 'permiso' => 'cita.ver'],
         ['grupo' => 'Atención', 'texto' => 'Pacientes', 'ruta' => '/pacientes', 'icono' => 'people', 'permiso' => 'paciente.ver'],
+        ['grupo' => 'Atención', 'texto' => 'Habitaciones', 'ruta' => '/habitaciones', 'icono' => 'hospital', 'permiso' => 'habitacion.ver'],
         ['grupo' => 'Atención', 'texto' => 'Nacimientos', 'ruta' => '/nacimientos', 'icono' => 'heart-pulse', 'permiso' => 'nacimiento.registrar'],
         ['grupo' => 'Atención', 'texto' => 'Prioridad de empleados', 'ruta' => '/prioridad', 'icono' => 'exclamation-triangle', 'permiso' => 'cita.agendar'],
         ['grupo' => 'Recepción', 'texto' => 'Visitantes', 'ruta' => '/visitas', 'icono' => 'door-open', 'permiso' => 'visita.ver'],

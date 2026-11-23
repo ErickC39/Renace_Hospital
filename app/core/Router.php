@@ -30,7 +30,8 @@ final class Router
     public function add(string $method, string $path, array $handler, ?string $permission = null): self
     {
         $path = '/' . trim($path, '/');
-        $regex = '#^' . preg_replace('#\{([a-z_]+)\}#', '(?P<$1>[^/]+)', $path) . '$#';
+        // {id} solo acepta números: /citas/abc da 404 y no llega a Oracle. Los demás parámetros, cualquier texto.
+        $regex = '#^' . preg_replace(['#\{id\}#', '#\{([a-z_]+)\}#'], ['(?P<id>\d+)', '(?P<$1>[^/]+)'], $path) . '$#';
         $this->routes[] = [
             'method' => strtoupper($method),
             'pattern' => $path,

@@ -8,7 +8,6 @@ use App\Core\Auth;
 use App\Core\Controlador;
 use App\Core\Documento;
 use App\Core\Response;
-use App\Core\Session;
 use App\Core\View;
 use App\Models\Venta;
 
@@ -102,7 +101,7 @@ final class VentaController extends Controlador
             "/ventas?pedido={$id}",
         );
         if ($numero !== '') {
-            Session::set('flash_ok', "Pago registrado. Se emitió la factura {$numero}.");
+            self::avisar('flash_ok', "Pago registrado. Se emitió la factura {$numero}.");
         }
         return $respuesta;
     }

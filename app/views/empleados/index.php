@@ -93,9 +93,9 @@ $opcionesSexo = static function (string $elegido) use ($sexos): string {
                 <div class="fields f2">
                     <div class="field"><label class="form-label" for="nombre">Nombre</label><input class="form-control" id="nombre" name="nombre" required maxlength="100" autocomplete="off"></div>
                     <div class="field"><label class="form-label" for="apellidos">Apellidos</label><input class="form-control" id="apellidos" name="apellidos" required maxlength="150" autocomplete="off"></div>
-                    <div class="field"><label class="form-label" for="sexo">Sexo</label><select class="form-select" id="sexo" name="sexo" required><?= $opcionesSexo('F') ?></select></div>
+                    <div class="field"><label class="form-label" for="sexo">Género</label><select class="form-select" id="sexo" name="sexo" required><?= $opcionesSexo('F') ?></select></div>
                     <div class="field"><label class="form-label" for="fecha_nacimiento">Fecha de nacimiento</label><input class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" type="date" max="<?= e($hoy) ?>"></div>
-                    <div class="field"><label class="form-label" for="telefono">Teléfono</label><input class="form-control" id="telefono" name="telefono" type="tel" maxlength="30" autocomplete="off"></div>
+                    <div class="field"><label class="form-label" for="telefono">Teléfono</label><input class="form-control" id="telefono" name="telefono" type="tel" maxlength="9" inputmode="numeric" pattern="\d{4}-?\d{4}" placeholder="8888-8888" title="8 dígitos, por ejemplo 8888-8888" autocomplete="off"></div>
                     <div class="field"><label class="form-label" for="correo">Correo</label><input class="form-control" id="correo" name="correo" type="email" maxlength="150" autocomplete="off"></div>
                 </div>
                 <div class="field"><label class="form-label" for="direccion">Dirección</label><input class="form-control" id="direccion" name="direccion" maxlength="500" autocomplete="off"></div>
@@ -152,7 +152,7 @@ $opcionesSexo = static function (string $elegido) use ($sexos): string {
         </div>
         <dl class="kv">
             <dt>Documento</dt><dd><?= $e['numero_documento'] ? e((Documento::TIPOS[$e['tipo_documento']] ?? 'Documento') . ' · ' . $e['numero_documento']) : '<span class="muted">Sin dato</span>' ?></dd>
-            <dt>Sexo</dt><dd><?= e($sexos[$e['sexo']] ?? '—') ?></dd>
+            <dt>Género</dt><dd><?= e($sexos[$e['sexo']] ?? '—') ?></dd>
             <dt>Nacimiento</dt><dd><?= $e['fecha_nacimiento'] ? e($fecha($e['fecha_nacimiento']) . ' · ' . $tiempo($e['fecha_nacimiento'])) : '<span class="muted">Sin dato</span>' ?></dd>
             <dt>Teléfono</dt><dd><?= $e['telefono'] ? e($e['telefono']) : '<span class="muted">Sin dato</span>' ?></dd>
             <dt>Correo</dt><dd><?= $e['correo'] ? '<a href="mailto:' . e($e['correo']) . '">' . e($e['correo']) . '</a>' : '<span class="muted">Sin dato</span>' ?></dd>
@@ -164,7 +164,11 @@ $opcionesSexo = static function (string $elegido) use ($sexos): string {
         </dl>
         <div class="ficha-pie">
             <button type="button" class="btn btn-outline" data-cerrar>Cerrar</button>
-            <button type="button" class="btn btn-primary" data-editar><i class="bi bi-pencil" aria-hidden="true"></i>Editar datos</button>
+            <?php if ($soyYo($e)): ?>
+                <span class="muted">Tu ficha la edita otro administrador.</span>
+            <?php else: ?>
+                <button type="button" class="btn btn-primary" data-editar><i class="bi bi-pencil" aria-hidden="true"></i>Editar datos</button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -181,9 +185,9 @@ $opcionesSexo = static function (string $elegido) use ($sexos): string {
             <div class="field"><label class="form-label" for="e<?= e($id) ?>-documento">Número de documento</label><input class="form-control" id="e<?= e($id) ?>-documento" name="numero_documento" value="<?= e($e['numero_documento']) ?>" maxlength="30" placeholder="1-1111-1111" autocomplete="off"></div>
             <div class="field"><label class="form-label" for="e<?= e($id) ?>-nombre">Nombre</label><input class="form-control" id="e<?= e($id) ?>-nombre" name="nombre" value="<?= e($e['nombre']) ?>" required maxlength="100"></div>
             <div class="field"><label class="form-label" for="e<?= e($id) ?>-apellidos">Apellidos</label><input class="form-control" id="e<?= e($id) ?>-apellidos" name="apellidos" value="<?= e($e['apellidos']) ?>" required maxlength="150"></div>
-            <div class="field"><label class="form-label" for="e<?= e($id) ?>-sexo">Sexo</label><select class="form-select" id="e<?= e($id) ?>-sexo" name="sexo" required><?= $opcionesSexo((string) $e['sexo']) ?></select></div>
+            <div class="field"><label class="form-label" for="e<?= e($id) ?>-sexo">Género</label><select class="form-select" id="e<?= e($id) ?>-sexo" name="sexo" required><?= $opcionesSexo((string) $e['sexo']) ?></select></div>
             <div class="field"><label class="form-label" for="e<?= e($id) ?>-nacimiento">Fecha de nacimiento</label><input class="form-control" id="e<?= e($id) ?>-nacimiento" name="fecha_nacimiento" type="date" max="<?= e($hoy) ?>" value="<?= e($e['fecha_nacimiento']) ?>"></div>
-            <div class="field"><label class="form-label" for="e<?= e($id) ?>-telefono">Teléfono</label><input class="form-control" id="e<?= e($id) ?>-telefono" name="telefono" type="tel" value="<?= e($e['telefono']) ?>" maxlength="30"></div>
+            <div class="field"><label class="form-label" for="e<?= e($id) ?>-telefono">Teléfono</label><input class="form-control" id="e<?= e($id) ?>-telefono" name="telefono" type="tel" value="<?= e($e['telefono']) ?>" maxlength="9" inputmode="numeric" pattern="\d{4}-?\d{4}" placeholder="8888-8888" title="8 dígitos, por ejemplo 8888-8888"></div>
             <div class="field"><label class="form-label" for="e<?= e($id) ?>-correo">Correo</label><input class="form-control" id="e<?= e($id) ?>-correo" name="correo" type="email" value="<?= e($e['correo']) ?>" maxlength="150"></div>
         </div>
         <div class="field"><label class="form-label" for="e<?= e($id) ?>-direccion">Dirección</label><input class="form-control" id="e<?= e($id) ?>-direccion" name="direccion" value="<?= e($e['direccion']) ?>" maxlength="500"></div>

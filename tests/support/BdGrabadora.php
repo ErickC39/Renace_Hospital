@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
+use App\Core\BusinessException;
 use App\Core\DatabaseInterface;
 
 /** Doble de Oracle que anota cada llamada y devuelve las filas que la prueba le indique. */
@@ -16,7 +17,7 @@ final class BdGrabadora implements DatabaseInterface
 
     /**
      * @param array<string, list<array<string, mixed>>> $filas   Texto del SQL => filas.
-     * @param array<string, array<string, mixed>>       $salidas Procedimiento => parámetros OUT.
+     * @param array<string, array<string, mixed>>       $salidas Procedimiento => parámetros OUT, o ['error' => [código, mensaje]].
      */
     public function __construct(private array $filas = [], private array $salidas = [])
     {
@@ -27,6 +28,10 @@ final class BdGrabadora implements DatabaseInterface
         $this->llamadas[] = ['procedure' => $procedure, 'in' => $in];
         foreach ($this->salidas as $nombre => $valores) {
             if (str_contains($procedure, $nombre)) {
+                // ['error' => [20978, 'ORA-20978: ...']] simula que Oracle rechaza la operación.
+                if (isset($valores['error'])) {
+                    throw BusinessException::desdeOracle(['code' => $valores['error'][0], 'message' => $valores['error'][1]]);
+                }
                 return $valores;
             }
         }

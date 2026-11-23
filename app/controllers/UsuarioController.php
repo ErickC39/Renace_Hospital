@@ -10,7 +10,6 @@ use App\Core\Cliente;
 use App\Core\Controlador;
 use App\Core\HttpException;
 use App\Core\Response;
-use App\Core\Session;
 use App\Core\View;
 use App\Models\Usuario;
 use App\Models\UsuarioAdmin;
@@ -32,6 +31,9 @@ final class UsuarioController extends Controlador
         $usuario = (new UsuarioAdmin())->uno((int) $id);
         if ($usuario === null) {
             throw new HttpException(404, 'Ese usuario no existe.');
+        }
+        if (self::esUnoMismo($id)) {
+            throw new HttpException(403, 'Tu usuario lo edita otro administrador. Tu clave la cambias en "Cambiar mi clave".');
         }
         return $this->pantalla($usuario);
     }
@@ -69,9 +71,8 @@ final class UsuarioController extends Controlador
         if ($nombre === '' || $idRol <= 0) {
             return $this->rechazar('Indica el nombre de usuario y el rol.', $volver);
         }
-        $esUnoMismo = (int) $id === (int) Auth::user()['id_usuario'];
-        if ($esUnoMismo && ($estado === 'INACTIVO' || $idRol !== (int) $usuario['id_rol'])) {
-            return $this->rechazar('No puedes inactivarte ni cambiar tu propio rol. Pídeselo a otro administrador.', $volver);
+        if (self::esUnoMismo($id)) {
+            return $this->rechazar('No puedes editar tu propio usuario. Pídeselo a otro administrador.', '/usuarios');
         }
 
         if ($estado === 'INACTIVO' && $usuario['estado'] !== 'INACTIVO' && !$this->claveConfirmada()) {
@@ -93,17 +94,25 @@ final class UsuarioController extends Controlador
     /** POST /usuarios/{id}/clave · Genera una clave temporal y la muestra una sola vez. */
     public function restablecerClave(string $id): Response
     {
+        if (self::esUnoMismo($id)) {
+            return $this->rechazar('Tu clave la cambias en "Cambiar mi clave".', '/usuarios');
+        }
         if (!$this->claveConfirmada()) {
             return $this->rechazar('La clave de confirmación no es correcta. La clave no se restableció.', "/usuarios/{$id}/editar");
         }
         $clave = bin2hex(random_bytes(6));
         try {
             (new UsuarioAdmin())->cambiarClave((int) $id, $clave);
-            Session::set('flash_ok', "Clave temporal: {$clave}. Cópiala ahora: no se volverá a mostrar.");
+            self::avisar('flash_ok', "Clave temporal: {$clave}. Cópiala ahora: no se volverá a mostrar.");
         } catch (BusinessException $e) {
-            Session::set('flash_error', $e->getMessage());
+            self::avisar('flash_error', $e->getMessage());
         }
         return Response::redirect("/usuarios/{$id}/editar");
+    }
+
+    private static function esUnoMismo(string $id): bool
+    {
+        return (int) $id === (int) Auth::user()['id_usuario'];
     }
 
     /** @param array<string, mixed>|null $editando */

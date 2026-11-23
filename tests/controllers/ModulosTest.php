@@ -151,6 +151,67 @@ final class ModulosTest extends TestCase
         $this->assertSame([], $db->negocio());
     }
 
+    public function testUnBebeConNumerosEnElNombreNoSeRegistra(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/nacimientos', ['nacimiento.registrar'], [
+            'id_paciente_madre' => '1', 'id_medico' => '1', 'nombre_bebe' => 'Luz 2', 'apellidos_bebe' => 'Mora',
+            'sexo' => 'F', 'fecha_hora' => '2026-11-08 10:00', 'tipo_parto' => 'NATURAL', 'semanas_gestacion' => '39',
+            'peso_gr' => '3200', 'talla_cm' => '50', 'apgar_minuto_1' => '8', 'apgar_minuto_5' => '9',
+        ]);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    private const PACIENTE = [
+        'tipo_documento' => 'CEDULA', 'numero_documento' => '111111111', 'nombre' => 'Luis', 'apellidos' => 'Mora Solís', 'fecha_nacimiento' => '1985-02-03',
+        'sexo' => 'M', 'tipo_sangre' => 'O+', 'contacto_emergencia' => 'Ana Mora', 'telefono_emergencia' => '88880000',
+    ];
+
+    public function testElPacienteLlegaConElTelefonoDeEmergenciaFormateado(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/pacientes/nuevo', ['paciente.editar'], self::PACIENTE);
+
+        $this->assertSame('pkg_paciente.sp_paciente_registrar', $db->negocio()[0]['procedure']);
+        $this->assertSame('8888-0000', $db->negocio()[0]['in']['p_telefono_emergencia']);
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function pacientesInvalidos(): array
+    {
+        return [
+            'nombre con números' => ['nombre', 'Luis 2'],
+            'contacto con números' => ['contacto_emergencia', 'Ana 123'],
+            'teléfono de 7 dígitos' => ['telefono_emergencia', '8888-000'],
+            'género desconocido' => ['sexo', 'X'],
+        ];
+    }
+
+    #[DataProvider('pacientesInvalidos')]
+    public function testUnPacienteInvalidoNoSeRegistra(string $campo, string $valor): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/pacientes/nuevo', ['paciente.editar'], [$campo => $valor] + self::PACIENTE);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testUnVisitanteNuevoConNumerosEnElNombreNoSeRegistra(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/visitas/entrada', ['visita.registrar'], [
+            'numero_documento' => '111111111', 'tipo_documento' => 'CEDULA', 'nombre' => 'R2D2', 'apellidos' => 'Robot',
+            'motivo_visita' => 'Proveedor', 'id_area' => '1', 'id_empleado_recibe' => '1',
+        ]);
+
+        $this->assertSame([], $db->negocio());
+    }
+
     /** @return array<string, array{string}> */
     public static function apgarInvalidos(): array
     {
@@ -184,6 +245,37 @@ final class ModulosTest extends TestCase
         $this->enviar('/usuarios/1', ['usuario.administrar'], ['nombre_usuario' => 'ana', 'id_rol' => '1', 'estado' => 'INACTIVO']);
 
         $this->assertSame([], $db->negocio());
+    }
+
+    public function testNadieEditaSuPropioUsuarioNiAunSinCambiarElRol(): void
+    {
+        $db = $this->bd(['vw_seguridad_usuario_lista' => [['id_usuario' => '1', 'nombre_usuario' => 'ana', 'id_rol' => '1', 'estado' => 'ACTIVO']]]);
+
+        $this->enviar('/usuarios/1', ['usuario.administrar'], ['nombre_usuario' => 'ana.mora', 'id_rol' => '1', 'estado' => 'ACTIVO']);
+        $this->enviar('/usuarios/1/clave', ['usuario.administrar'], ['clave_confirmacion' => 'correcta-123']);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testElFormularioDelPropioUsuarioNoSeAbre(): void
+    {
+        $this->bd(['vw_seguridad_usuario_lista' => [['id_usuario' => '1', 'nombre_usuario' => 'ana', 'nombre_completo' => 'Ana', 'puesto' => null,
+            'id_rol' => '1', 'rol' => 'administrador', 'estado' => 'ACTIVO', 'ultimo_acceso' => null]]]);
+        $this->entrar(['usuario.administrar']);
+
+        $this->assertSame(403, $this->app()->handle('GET', '/usuarios/1/editar')->status);
+    }
+
+    public function testEnLaListaElPropioUsuarioNoTieneBotonDeEditar(): void
+    {
+        $fila = ['nombre_completo' => 'X', 'puesto' => null, 'id_rol' => '1', 'rol' => 'administrador', 'estado' => 'ACTIVO', 'ultimo_acceso' => null];
+        $this->bd(['vw_seguridad_usuario_lista' => [['id_usuario' => '1', 'nombre_usuario' => 'ana'] + $fila, ['id_usuario' => '2', 'nombre_usuario' => 'luis'] + $fila]]);
+        $this->entrar(['usuario.administrar']);
+
+        $html = $this->app()->handle('GET', '/usuarios')->body;
+
+        $this->assertStringContainsString('/usuarios/2/editar', $html);
+        $this->assertStringNotContainsString('/usuarios/1/editar', $html);
     }
 
     public function testInactivarOtroUsuarioExigeLaClaveDelAdministrador(): void
@@ -286,6 +378,10 @@ final class ModulosTest extends TestCase
             'cédula incompleta' => ['numero_documento', '1-1111-111'],
             'empleado con pasaporte' => ['tipo_documento', 'PASAPORTE'],
             'cédula de 9 dígitos marcada como DIMEX' => ['tipo_documento', 'DIMEX'],
+            'nombre con números' => ['nombre', 'Ana2'],
+            'apellidos con números' => ['apellidos', 'Mora 3'],
+            'teléfono de 7 dígitos' => ['telefono', '8888-000'],
+            'teléfono con letras' => ['telefono', 'ocho ocho'],
         ];
     }
 
@@ -315,6 +411,25 @@ final class ModulosTest extends TestCase
         $this->enviar('/empleados/1', ['usuario.administrar'], ['estado' => 'INACTIVO'] + self::EMPLEADO);
 
         $this->assertSame([], $db->negocio());
+    }
+
+    public function testElTelefonoDelEmpleadoSeGuardaConSuFormato(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/empleados', ['usuario.administrar'], ['telefono' => '88880000'] + self::EMPLEADO);
+
+        $this->assertSame('8888-0000', $db->llamadas[0]['in']['p_telefono']);
+    }
+
+    public function testNadieEditaSuPropiaFicha(): void
+    {
+        $db = $this->bd(['vw_empleado_lista' => [['id_empleado' => '1', 'estado' => 'ACTIVO', 'nombre_usuario' => 'ana', 'estado_usuario' => 'ACTIVO']]]);
+
+        $this->enviar('/empleados/1', ['usuario.administrar'], ['estado' => 'ACTIVO', 'direccion' => 'Cartago'] + self::EMPLEADO);
+
+        $this->assertSame([], $db->negocio());
+        $this->assertStringContainsString('propia ficha', $_SESSION['flash_error']);
     }
 
     public function testEditarSinInactivarNoPideClave(): void
@@ -558,6 +673,271 @@ final class ModulosTest extends TestCase
 
         $this->assertSame('Categoría agregada.', $_SESSION['flash_ok']);
         $this->assertArrayNotHasKey('flash_error', $_SESSION);
+    }
+
+    public function testRegistrarMedicoEsUnaSolaLlamadaConElCodigoEnMayusculas(): void
+    {
+        $db = $this->bd([], ['sp_medico_guardar' => ['p_id_guardado' => '4']]);
+
+        $res = $this->enviar('/medicos', ['usuario.administrar'], ['id_empleado' => '3', 'id_especialidad' => '2', 'codigo_colegio' => 'med-1234']);
+
+        $this->assertSame(['pkg_medico.sp_medico_guardar'], array_column($db->negocio(), 'procedure'));
+        $this->assertSame(['p_id_medico' => null, 'p_id_empleado' => 3, 'p_id_especialidad' => 2, 'p_codigo_colegio' => 'MED-1234'], $db->negocio()[0]['in']);
+        $this->assertSame('/medicos?id=4', $res->headers['Location']);
+    }
+
+    /** @return array<string, array{array<string, string>}> */
+    public static function medicosInvalidos(): array
+    {
+        return [
+            'sin empleado' => [['id_empleado' => '']],
+            'sin especialidad' => [['id_especialidad' => '0']],
+            'código corto' => [['codigo_colegio' => 'M1']],
+            'código con espacios' => [['codigo_colegio' => 'MED 1234']],
+        ];
+    }
+
+    /** @param array<string, string> $cambio */
+    #[DataProvider('medicosInvalidos')]
+    public function testUnMedicoInvalidoNoSeRegistra(array $cambio): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/medicos', ['usuario.administrar'], $cambio + ['id_empleado' => '3', 'id_especialidad' => '2', 'codigo_colegio' => 'MED-1234']);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    private const BLOQUE = ['dia_semana' => '1', 'id_consultorio' => '1', 'hora_inicio' => '08:00', 'hora_fin' => '12:00', 'duracion_minutos' => '30'];
+
+    public function testElBloqueDeHorarioLlegaConElMedicoDeLaRuta(): void
+    {
+        $db = $this->bd();
+
+        $res = $this->enviar('/medicos/4/horario', ['usuario.administrar'], self::BLOQUE);
+
+        $this->assertSame('pkg_medico.sp_horario_guardar', $db->negocio()[0]['procedure']);
+        $this->assertSame([
+            'p_id_horario_medico' => null, 'p_id_medico' => 4, 'p_id_consultorio' => 1, 'p_dia_semana' => 1,
+            'p_hora_inicio' => '08:00', 'p_hora_fin' => '12:00', 'p_duracion_minutos' => 30,
+        ], $db->negocio()[0]['in']);
+        $this->assertSame('/medicos?id=4', $res->headers['Location']);
+    }
+
+    /** @return array<string, array{array<string, string>}> */
+    public static function bloquesInvalidos(): array
+    {
+        return [
+            'salida antes que la entrada' => [['hora_inicio' => '14:00', 'hora_fin' => '08:00']],
+            'hora sin formato' => [['hora_inicio' => '8:00']],
+            'día 9' => [['dia_semana' => '9']],
+            'sin consultorio' => [['id_consultorio' => '']],
+            'cita de 2 minutos' => [['duracion_minutos' => '2']],
+        ];
+    }
+
+    /** @param array<string, string> $cambio */
+    #[DataProvider('bloquesInvalidos')]
+    public function testUnBloqueInvalidoNoSeGuarda(array $cambio): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/medicos/4/horario', ['usuario.administrar'], $cambio + self::BLOQUE);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testQuitarUnBloqueVuelveAlMedico(): void
+    {
+        $db = $this->bd();
+
+        $res = $this->enviar('/medicos/horarios/9/quitar', ['usuario.administrar'], ['id_medico' => '4']);
+
+        $this->assertSame([['procedure' => 'pkg_medico.sp_horario_quitar', 'in' => ['p_id_horario_medico' => 9]]],
+            array_map(static fn(array $l): array => ['procedure' => $l['procedure'], 'in' => $l['in']], $db->negocio()));
+        $this->assertSame('/medicos?id=4', $res->headers['Location']);
+    }
+
+    public function testLaEspecialidadSeGuardaEnSuPaquete(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/medicos/especialidades', ['usuario.administrar'], ['nombre_especialidad' => 'Pediatría', 'descripcion' => 'Niños']);
+
+        $this->assertSame('pkg_medico.sp_especialidad_guardar', $db->negocio()[0]['procedure']);
+        $this->assertSame(['p_id_especialidad' => null, 'p_nombre' => 'Pediatría', 'p_descripcion' => 'Niños'], $db->negocio()[0]['in']);
+    }
+
+    private const MEDICO = ['id_medico' => '4', 'id_empleado' => '3', 'nombre' => 'Laura Mora', 'numero_documento' => '1-1111-1111', 'id_especialidad' => '2',
+        'especialidad' => 'Medicina general', 'codigo_colegio' => 'MED-1001', 'estado' => 'ACTIVO', 'bloques_horario' => '1', 'citas_proximas' => '2', 'citas_hoy' => '1'];
+
+    public function testLaPantallaDeMedicosMuestraHorarioYCitas(): void
+    {
+        $this->bd([
+            'vw_medico_lista' => [self::MEDICO],
+            'vw_medico_horario' => [['id_horario_medico' => '9', 'dia_semana' => '1', 'dia' => 'Lunes', 'hora_inicio' => '08:00', 'hora_fin' => '12:00',
+                'duracion_minutos' => '30', 'cupo' => '8', 'consultorio' => 'Consultorio 1']],
+            'vw_medico_cita' => [['fecha' => '2026-11-23', 'hora' => '08:30', 'paciente' => 'Luis Solís', 'tipo_cita' => 'PRIMERA_VEZ', 'estado' => 'PROGRAMADA']],
+            'vw_medico_especialidad' => [['id_especialidad' => '2', 'nombre' => 'Medicina general', 'descripcion' => null, 'medicos' => '1']],
+            'vw_medico_consultorio' => [['id_consultorio' => '1', 'codigo' => 'C-01', 'nombre' => 'Consultorio 1']],
+        ]);
+        $this->entrar(['cita.ver', 'usuario.administrar']);
+
+        $res = $this->app()->handle('GET', '/medicos');
+
+        $this->assertSame(200, $res->status);
+        foreach (['Laura Mora', 'Lunes', '08:00', 'Luis Solís', 'Primera vez', 'Registrar médico', 'Agregar al horario'] as $texto) {
+            $this->assertStringContainsString($texto, $res->body);
+        }
+    }
+
+    public function testSinPermisoDeAdministrarSoloSeConsulta(): void
+    {
+        $this->bd(['vw_medico_lista' => [self::MEDICO]]);
+        $this->entrar(['cita.ver']);
+
+        $html = $this->app()->handle('GET', '/medicos')->body;
+
+        $this->assertStringContainsString('Laura Mora', $html);
+        $this->assertStringNotContainsString('Registrar médico', $html);
+        $this->assertStringNotContainsString('/medicos/4/horario', $html);
+    }
+
+    public function testCitasAgrupaALosMedicosPorEspecialidad(): void
+    {
+        $this->bd(['vw_cita_medico' => [
+            ['id_medico' => '4', 'nombre' => 'Laura Mora · Medicina general', 'id_especialidad' => '2', 'especialidad' => 'Medicina general'],
+            ['id_medico' => '5', 'nombre' => 'Ana Ruiz · Pediatría', 'id_especialidad' => '3', 'especialidad' => 'Pediatría'],
+        ]]);
+        $this->entrar(['cita.ver', 'cita.agendar']);
+
+        $html = $this->app()->handle('GET', '/citas')->body;
+
+        $this->assertStringContainsString('data-filtra="id_medico"', $html);
+        $this->assertStringContainsString('<option value="3" >Pediatría</option>', $html);
+        $this->assertStringContainsString('data-grupo="3"', $html);
+    }
+
+    public function testAgregarHabitacionLlegaConElNumeroEnMayusculasYSinArea(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/habitaciones', ['usuario.administrar'], ['numero' => 'uci-1', 'id_tipo_habitacion' => '4', 'id_area' => '']);
+
+        $this->assertSame('pkg_habitacion.sp_habitacion_guardar', $db->negocio()[0]['procedure']);
+        $this->assertSame(['p_id_habitacion' => null, 'p_numero' => 'UCI-1', 'p_id_tipo_habitacion' => 4, 'p_id_area' => null], $db->negocio()[0]['in']);
+    }
+
+    /** @return array<string, array{array<string, string>}> */
+    public static function habitacionesInvalidas(): array
+    {
+        return [
+            'sin número' => [['numero' => '']],
+            'número largo' => [['numero' => 'HABITACION-101']],
+            'número con espacios' => [['numero' => '1 01']],
+            'sin tipo' => [['id_tipo_habitacion' => '']],
+        ];
+    }
+
+    /** @param array<string, string> $cambio */
+    #[DataProvider('habitacionesInvalidas')]
+    public function testUnaHabitacionInvalidaNoSeGuarda(array $cambio): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/habitaciones', ['usuario.administrar'], $cambio + ['numero' => '101', 'id_tipo_habitacion' => '1']);
+
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testElIngresoBuscaAlPacientePorSuDocumentoYAnotaQuienLoRegistra(): void
+    {
+        $db = $this->bd(['vw_persona_buscar' => [['id_persona' => '9', 'numero_documento' => '1-1111-1111', 'nombre_completo' => 'Luis Mora']]]);
+
+        $this->enviar('/habitaciones/3/ingreso', ['habitacion.asignar'], ['numero_documento' => '111111111', 'motivo' => 'Observación por fiebre alta']);
+
+        $this->assertSame('pkg_habitacion.sp_hospitalizacion_ingresar', $db->negocio()[0]['procedure']);
+        $this->assertSame(['p_id_habitacion' => 3, 'p_id_persona' => 9, 'p_motivo' => 'Observación por fiebre alta', 'p_id_usuario' => 1], $db->negocio()[0]['in']);
+        $this->assertSame('Ingreso registrado para Luis Mora.', $_SESSION['flash_ok']);
+    }
+
+    public function testSinPacienteRegistradoNoHayIngreso(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/habitaciones/3/ingreso', ['habitacion.asignar'], ['numero_documento' => '111111111', 'motivo' => 'Fiebre']);
+
+        $this->assertSame([], $db->negocio());
+        $this->assertStringContainsString('Registra primero al paciente', $_SESSION['flash_error']);
+    }
+
+    public function testLaHabitacionOcupadaQueRechazaOracleSeExplicaSinError500(): void
+    {
+        $this->bd(
+            ['vw_persona_buscar' => [['id_persona' => '9', 'numero_documento' => '1-1111-1111', 'nombre_completo' => 'Luis Mora']]],
+            ['sp_hospitalizacion_ingresar' => ['error' => [20978, 'ORA-20978: La habitación 101 no está disponible (ocupada). Elige otra.']]],
+        );
+
+        $res = $this->enviar('/habitaciones/3/ingreso', ['habitacion.asignar'], ['numero_documento' => '111111111', 'motivo' => 'Fiebre']);
+
+        $this->assertSame(302, $res->status);
+        $this->assertSame('La habitación 101 no está disponible (ocupada). Elige otra.', $_SESSION['flash_error']);
+    }
+
+    public function testDarSalidaDejaLaHabitacionEnLimpiezaSiSeEligio(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/habitaciones/estadias/7/salida', ['habitacion.asignar'], ['observacion' => 'Alta médica', 'dejar_en' => 'LIMPIEZA']);
+        $this->enviar('/habitaciones/estadias/8/salida', ['habitacion.asignar'], ['observacion' => '', 'dejar_en' => 'OTRO']);
+
+        $this->assertSame(['p_id_hospitalizacion' => 7, 'p_observacion' => 'Alta médica', 'p_dejar_en' => 'LIMPIEZA', 'p_id_usuario' => 1], $db->negocio()[0]['in']);
+        $this->assertSame('DISPONIBLE', $db->negocio()[1]['in']['p_dejar_en']);
+    }
+
+    public function testElEstadoOcupadaNoSePoneAMano(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/habitaciones/3/estado', ['habitacion.asignar'], ['estado' => 'OCUPADA']);
+        $this->enviar('/habitaciones/3/estado', ['habitacion.asignar'], ['estado' => 'MANTENIMIENTO']);
+
+        $this->assertCount(1, $db->negocio());
+        $this->assertSame(['p_id_habitacion' => 3, 'p_estado' => 'MANTENIMIENTO'], $db->negocio()[0]['in']);
+    }
+
+    private const HABITACIONES = [
+        ['id_habitacion' => '3', 'numero' => '101', 'id_tipo_habitacion' => '1', 'tipo' => 'Individual', 'id_area' => null, 'area' => null, 'estado' => 'DISPONIBLE',
+            'id_hospitalizacion' => null, 'paciente' => null, 'numero_documento' => null, 'fecha_ingreso' => null, 'dias' => null, 'motivo' => null, 'responsable' => null],
+        ['id_habitacion' => '4', 'numero' => '102', 'id_tipo_habitacion' => '2', 'tipo' => 'Doble', 'id_area' => null, 'area' => null, 'estado' => 'OCUPADA',
+            'id_hospitalizacion' => '7', 'paciente' => 'Luis Mora', 'numero_documento' => '1-1111-1111', 'fecha_ingreso' => '2026-11-22 08:00', 'dias' => '0',
+            'motivo' => 'Fiebre alta', 'responsable' => 'Ana Solís'],
+    ];
+
+    public function testLaPantallaMuestraQuienOcupaCadaHabitacion(): void
+    {
+        $this->bd(['vw_habitacion_lista' => self::HABITACIONES]);
+        $this->entrar(['habitacion.ver', 'habitacion.asignar']);
+
+        $res = $this->app()->handle('GET', '/habitaciones');
+
+        $this->assertSame(200, $res->status);
+        foreach (['Luis Mora', 'Fiebre alta', 'Ana Solís', 'Ingresar paciente', 'Dar salida', '/habitaciones/estadias/7/salida'] as $texto) {
+            $this->assertStringContainsString($texto, $res->body);
+        }
+        $this->assertStringNotContainsString('Agregar habitación', $res->body);
+    }
+
+    public function testQuienSoloVeNoPuedeAsignar(): void
+    {
+        $this->bd(['vw_habitacion_lista' => self::HABITACIONES]);
+        $this->entrar(['habitacion.ver']);
+
+        $html = $this->app()->handle('GET', '/habitaciones')->body;
+
+        $this->assertStringContainsString('Luis Mora', $html);
+        $this->assertStringNotContainsString('Ingresar paciente', $html);
+        $this->assertStringNotContainsString('/ingreso', $html);
     }
 
     /**

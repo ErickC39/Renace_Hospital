@@ -31,7 +31,6 @@ final class Bitacora extends Modelo
     /** Cuántas filas se muestran en pantalla. */
     public const LIMITE = 100;
 
-
     /** @return array<string, int> Total de filas de ese día por pestaña. */
     public function totales(string $fecha): array
     {

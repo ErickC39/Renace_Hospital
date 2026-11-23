@@ -17,7 +17,6 @@ final class Usuario extends Modelo
     /** Hash de relleno: si el usuario no existe se verifica igual, para que tarde lo mismo. */
     private const HASH_RELLENO = '$2y$10$ukJeDNThYFJll0A72GiusOVPTaqCx.piscbJcItJ4g6q6RRvo4Tga';
 
-
     /**
      * Verifica usuario y clave y anota el intento (LOGIN o FALLIDO).
      *

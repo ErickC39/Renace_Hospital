@@ -12,7 +12,6 @@ final class Medicamento extends Modelo
     private const COLUMNAS = 'id_medicamento, id_producto, codigo, principio_activo, concentracion, presentacion, via_aplicacion,
                     indicaciones_uso, restricciones, requiere_receta, existencias';
 
-
     /** @return list<array<string, mixed>> */
     public function lista(string $busqueda = '', string $via = ''): array
     {
@@ -65,11 +64,7 @@ final class Medicamento extends Modelo
     /** @param array<string, string|int|null> $datos Claves con el nombre del parámetro, sin p_. */
     public function guardar(array $datos): void
     {
-        $in = [];
-        foreach ($datos as $campo => $valor) {
-            $in["p_{$campo}"] = $valor;
-        }
-        $this->db->call('pkg_catalogo.sp_medicamento_guardar', $in);
+        $this->db->call('pkg_catalogo.sp_medicamento_guardar', self::conPrefijo($datos));
     }
 
     /**
@@ -79,10 +74,6 @@ final class Medicamento extends Modelo
      */
     public function guardarConProducto(array $datos): int
     {
-        $in = [];
-        foreach ($datos as $campo => $valor) {
-            $in["p_{$campo}"] = $valor;
-        }
-        return (int) $this->db->call('pkg_catalogo.sp_medicamento_con_producto', $in, ['p_id_medicamento'])['p_id_medicamento'];
+        return (int) $this->db->call('pkg_catalogo.sp_medicamento_con_producto', self::conPrefijo($datos), ['p_id_medicamento'])['p_id_medicamento'];
     }
 }

@@ -34,11 +34,7 @@ final class Enfermedad extends Modelo
     /** @param array<string, string|int> $datos Claves con el nombre del parámetro, sin p_. */
     public function guardar(array $datos): int
     {
-        $in = [];
-        foreach ($datos as $campo => $valor) {
-            $in["p_{$campo}"] = $valor;
-        }
-        return (int) $this->db->call('pkg_catalogo.sp_enfermedad_guardar', $in, ['p_id_enfermedad'])['p_id_enfermedad'];
+        return (int) $this->db->call('pkg_catalogo.sp_enfermedad_guardar', self::conPrefijo($datos), ['p_id_enfermedad'])['p_id_enfermedad'];
     }
 
     /** Crea (sin id) o le cambia el nombre a una categoría de enfermedad. */
