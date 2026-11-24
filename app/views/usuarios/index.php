@@ -68,7 +68,7 @@ $permisosDelRol = $matriz[$rolElegido] ?? [];
                 <div class="d-flex flex-wrap gap-2">
                     <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i>Guardar cambios</button>
                     <a class="btn btn-outline" href="/usuarios">Cancelar</a>
-                    <button class="btn btn-outline ms-auto" type="submit" form="restablecer"><i class="bi bi-key" aria-hidden="true"></i>Restablecer clave</button>
+                    <button class="btn btn-outline" type="submit" form="restablecer"><i class="bi bi-key" aria-hidden="true"></i>Restablecer clave</button>
                 </div>
             </form>
             <form id="restablecer" method="post" action="/usuarios/<?= e($editando['id_usuario']) ?>/clave" data-confirmar="Restablecer la clave de este usuario"><?= Csrf::field() ?></form>

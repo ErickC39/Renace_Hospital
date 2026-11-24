@@ -160,7 +160,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
                 <span class="sub"><?= e($e['tipo_cita']) ?> · <?= e($e['medico']) ?> · cita <?= e($e['hora_programada']) ?></span>
                 <div class="meter"><i class="<?= $alerta ? 'warn' : '' ?>" style="width:<?= min(100, round($min / $maxEspera * 100)) ?>%"></i></div>
                 <?php if (Auth::can('cita.atender')): ?>
-                    <form method="post" action="/citas/<?= e($e['id_cita']) ?>/iniciar" class="mt-1 text-end">
+                    <form method="post" action="/citas/<?= e($e['id_cita']) ?>/iniciar" class="mt-1">
                         <?= Csrf::field() ?><button class="btn btn-outline btn-sm" type="submit">Iniciar</button>
                     </form>
                 <?php endif; ?>

@@ -15,18 +15,24 @@ $flashError = Session::pull('flash_error');
 $marcadores ??= (new Resumen())->marcadores();
 // Con ?v= el navegador baja de nuevo un archivo solo cuando cambió.
 $recurso = static fn(string $ruta): string => $ruta . '?v=' . @filemtime(__DIR__ . '/../../public' . $ruta);
-// Los módulos que el rol puede ver, por grupo, y el enlace de cada uno.
-$gruposMenu = [];
-foreach (Menu::para(Auth::permissions()) as $opcion) {
-    $gruposMenu[$opcion['grupo']][] = $opcion;
-}
-$enlaceModulo = static function (array $o) use ($rutaActual, $marcadores): string {
-    $marcador = $o['ruta'] === '/citas' && $marcadores['espera'] !== null
-        ? '<span class="count" title="Pacientes en espera">' . e($marcadores['espera']) . '</span>'
-        : '';
-    return '<a class="' . (str_starts_with($rutaActual, $o['ruta']) ? 'on' : '') . '" href="' . e($o['ruta']) . '">'
-        . '<i class="bi bi-' . e($o['icono']) . '" aria-hidden="true"></i>' . e($o['texto']) . $marcador . '</a>';
+// Los módulos que el rol puede ver, por departamento (Menu::GRUPOS), y el enlace de cada uno.
+$gruposMenu = Menu::porGrupo(Auth::permissions());
+$esActual = static fn(string $ruta): bool => str_starts_with($rutaActual, $ruta);
+$marcadorEspera = static fn(): string => $marcadores['espera'] !== null
+    ? '<span class="count" title="Pacientes en espera">' . e($marcadores['espera']) . '</span>'
+    : '';
+$enlaceModulo = static function (array $o) use ($esActual, $marcadorEspera): string {
+    return '<a class="' . ($esActual($o['ruta']) ? 'on' : '') . '" href="' . e($o['ruta']) . '"' . ($esActual($o['ruta']) ? ' aria-current="page"' : '') . '>'
+        . '<i class="bi bi-' . e($o['icono']) . '" aria-hidden="true"></i>' . e($o['texto']) . ($o['ruta'] === '/citas' ? $marcadorEspera() : '') . '</a>';
 };
+// Opción dentro de un desplegable: con su descripción debajo del nombre.
+$opcionGrupo = static function (array $o) use ($esActual, $marcadorEspera): string {
+    return '<a class="' . ($esActual($o['ruta']) ? 'on' : '') . '" href="' . e($o['ruta']) . '"' . ($esActual($o['ruta']) ? ' aria-current="page"' : '') . '>'
+        . '<i class="bi bi-' . e($o['icono']) . '" aria-hidden="true"></i>'
+        . '<span><b>' . e($o['texto']) . '</b><small>' . e($o['descripcion']) . '</small></span>'
+        . ($o['ruta'] === '/citas' ? $marcadorEspera() : '') . '</a>';
+};
+$grupoActivo = static fn(array $opciones): bool => array_filter($opciones, static fn(array $o): bool => $esActual($o['ruta'])) !== [];
 $iniciales = '';
 if ($usuarioSesion !== null) {
     foreach (array_slice(explode(' ', (string) $usuarioSesion['nombre_completo']), 0, 2) as $parte) {
@@ -106,8 +112,14 @@ if ($usuarioSesion !== null) {
                         <div class="panel-modulos">
                             <a class="<?= $rutaActual === '/' ? 'on' : '' ?>" href="/"><i class="bi bi-house" aria-hidden="true"></i>Inicio</a>
                             <?php foreach ($gruposMenu as $grupo => $opciones): ?>
-                                <h2><?= e($grupo) ?></h2>
-                                <?php foreach ($opciones as $opcion): ?><?= $enlaceModulo($opcion) ?><?php endforeach; ?>
+                                <?php if (count($opciones) === 1): ?>
+                                    <?= $enlaceModulo($opciones[0]) ?>
+                                <?php else: ?>
+                                    <details <?= $grupoActivo($opciones) ? 'open' : '' ?>>
+                                        <summary><i class="bi bi-<?= e(Menu::GRUPOS[$grupo]) ?>" aria-hidden="true"></i><?= e($grupo) ?><i class="bi bi-chevron-down flecha" aria-hidden="true"></i></summary>
+                                        <?php foreach ($opciones as $opcion): ?><?= $enlaceModulo($opcion) ?><?php endforeach; ?>
+                                    </details>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </div>
                         <button type="button" class="opcion" data-tema>
@@ -125,9 +137,22 @@ if ($usuarioSesion !== null) {
         </div>
         <nav class="modulos" aria-label="Módulos">
             <a class="<?= $rutaActual === '/' ? 'on' : '' ?>" href="/"><i class="bi bi-house" aria-hidden="true"></i>Inicio</a>
-            <?php foreach ($gruposMenu as $opciones): ?>
-                <span class="sep" aria-hidden="true"></span>
-                <?php foreach ($opciones as $opcion): ?><?= $enlaceModulo($opcion) ?><?php endforeach; ?>
+            <?php $numeroGrupo = 0; foreach ($gruposMenu as $grupo => $opciones):
+                $idPanel = 'grupo-' . (++$numeroGrupo); ?>
+                <?php if (count($opciones) === 1): ?>
+                    <?= $enlaceModulo($opciones[0]) ?>
+                <?php else: ?>
+                    <div class="grupo-menu">
+                        <button type="button" class="grupo-boton <?= $grupoActivo($opciones) ? 'on' : '' ?>" data-grupo aria-expanded="false" aria-controls="<?= e($idPanel) ?>">
+                            <i class="bi bi-<?= e(Menu::GRUPOS[$grupo]) ?>" aria-hidden="true"></i><?= e($grupo) ?>
+                            <?php if (in_array('/citas', array_column($opciones, 'ruta'), true) && (int) ($marcadores['espera'] ?? 0) > 0): ?><span class="count" title="Pacientes en espera"><?= e($marcadores['espera']) ?></span><?php endif; ?>
+                            <i class="bi bi-chevron-down flecha" aria-hidden="true"></i>
+                        </button>
+                        <div class="grupo-panel" id="<?= e($idPanel) ?>" hidden>
+                            <?php foreach ($opciones as $opcion): ?><?= $opcionGrupo($opcion) ?><?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             <?php endforeach; ?>
         </nav>
     </header>
@@ -149,7 +174,7 @@ if ($usuarioSesion !== null) {
         <label class="form-label" for="confirmar-clave-valor">Tu clave</label>
         <input class="form-control" id="confirmar-clave-valor" type="password" autocomplete="current-password">
         <p class="text-danger small mt-2 mb-0" id="confirmar-aviso" hidden>Escribe tu clave para continuar.</p>
-        <div class="d-flex justify-content-end gap-2 mt-3">
+        <div class="d-flex justify-content-start gap-2 mt-3">
             <button class="btn btn-outline" type="button" data-confirmar-cancelar>Cancelar</button>
             <button class="btn btn-primary" type="button" data-confirmar-aceptar>Confirmar</button>
         </div>

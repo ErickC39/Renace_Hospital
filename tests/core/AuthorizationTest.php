@@ -65,7 +65,7 @@ final class AuthorizationTest extends TestCase
         $recepcion = array_column(Menu::para($permisosRecepcion), 'texto');
         $auditor = array_column(Menu::para($permisosAuditor), 'texto');
 
-        $this->assertSame(['Citas', 'Médicos', 'Pacientes', 'Prioridad de empleados', 'Visitantes'], $recepcion);
+        $this->assertSame(['Citas', 'Pacientes', 'Médicos', 'Prioridad de empleados', 'Visitantes'], $recepcion);
         $this->assertSame(['Citas', 'Médicos', 'Visitantes', 'Ventas', 'Inventario', 'Bitácoras'], $auditor);
     }
 
@@ -98,5 +98,32 @@ final class AuthorizationTest extends TestCase
         return new App((new Router())
             ->get('/', [HomeController::class, 'index'], Auth::SESION)
             ->get('/bitacoras', [HomeController::class, 'index'], 'registro.ver'));
+    }
+
+    public function testElMenuSeAgrupaPorDepartamentoYOcultaLosVacios(): void
+    {
+        $grupos = Menu::porGrupo(['visita.ver', 'cita.ver', 'venta.ver', 'inventario.ver']);
+
+        $this->assertSame(['Atención', 'Recepción', 'Farmacia'], array_keys($grupos));
+        $this->assertSame(['Ventas', 'Inventario'], array_column($grupos['Farmacia'], 'texto'));
+        foreach (Menu::OPCIONES as $opcion) {
+            $this->assertArrayHasKey($opcion['grupo'], Menu::GRUPOS, 'Cada opción debe pertenecer a un departamento con ícono');
+            $this->assertNotSame('', $opcion['descripcion']);
+        }
+    }
+
+    public function testLaBarraMuestraDesplegablesYEnlaceDirectoSiHayUnSoloModulo(): void
+    {
+        Auth::login(['id_usuario' => 1, 'nombre_usuario' => 'ana', 'nombre_completo' => 'Ana Mora', 'id_rol' => 6, 'rol' => 'auditor', 'estado' => 'ACTIVO'],
+            ['visita.ver', 'cita.ver', 'venta.ver', 'inventario.ver']);
+        $html = (new App((new Router())->get('/', [HomeController::class, 'index'])))->handle('GET', '/ventas')->body;
+        Auth::logout();
+
+        $this->assertStringContainsString('data-grupo aria-expanded="false" aria-controls="grupo-', $html);
+        $this->assertStringContainsString('Farmacia', $html);
+        $this->assertStringContainsString('Pedidos, cobros y facturas', $html);
+        // Recepción solo tiene Visitantes: va como enlace directo, sin botón.
+        $this->assertStringNotContainsString('</i>Recepción', $html);
+        $this->assertStringContainsString('href="/visitas"', $html);
     }
 }

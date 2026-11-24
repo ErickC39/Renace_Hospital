@@ -39,6 +39,55 @@
         });
     }
 
+    // Departamentos de la barra: cada botón abre su lista de módulos. Uno abierto a la vez; se cierran
+    // al tocar fuera o con Escape. Con el teclado: flecha abajo abre y entra a la lista, y las flechas
+    // recorren sus opciones.
+    const botonesGrupo = Array.from(document.querySelectorAll('[data-grupo]'));
+    const panelDe = function (boton) { return document.getElementById(boton.getAttribute('aria-controls')); };
+    const abrirGrupo = function (boton, abierto) {
+        panelDe(boton).hidden = !abierto;
+        boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    };
+    const cerrarGrupos = function (excepto) {
+        botonesGrupo.forEach(function (b) { if (b !== excepto && b.getAttribute('aria-expanded') === 'true') { abrirGrupo(b, false); } });
+    };
+    botonesGrupo.forEach(function (boton) {
+        const panel = panelDe(boton);
+        const opciones = function () { return Array.from(panel.querySelectorAll('a')); };
+        boton.addEventListener('click', function () {
+            const abrir = panel.hidden;
+            cerrarGrupos(boton);
+            abrirGrupo(boton, abrir);
+        });
+        boton.addEventListener('keydown', function (evento) {
+            if (evento.key === 'ArrowDown') {
+                evento.preventDefault();
+                cerrarGrupos(boton);
+                abrirGrupo(boton, true);
+                opciones()[0].focus();
+            }
+        });
+        panel.addEventListener('keydown', function (evento) {
+            const lista = opciones();
+            const i = lista.indexOf(document.activeElement);
+            if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
+                evento.preventDefault();
+                const paso = evento.key === 'ArrowDown' ? 1 : -1;
+                lista[(i + paso + lista.length) % lista.length].focus();
+            }
+        });
+    });
+    document.addEventListener('click', function (evento) {
+        if (!evento.target.closest('.grupo-menu')) { cerrarGrupos(null); }
+    });
+    document.addEventListener('keydown', function (evento) {
+        const abierto = botonesGrupo.find(function (b) { return b.getAttribute('aria-expanded') === 'true'; });
+        if (evento.key === 'Escape' && abierto) {
+            abrirGrupo(abierto, false);
+            abierto.focus();
+        }
+    });
+
     // Campana de avisos: la lista se pide al servidor la primera vez que se abre, así no
     // agrega una consulta a cada página. Se cierra al tocar fuera o con Escape.
     const botonAvisos = document.querySelector('[data-avisos]');
