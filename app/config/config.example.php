@@ -20,4 +20,15 @@ return [
         // Esquema dueño de las tablas y paquetes (el aplicativo trabaja sobre él)
         'schema'   => 'HOSPITAL',
     ],
+    'mail' => [
+        // Cómo se envían los correos (código para recuperar la clave):
+        //   'archivo' = no envía, los escribe en un archivo temporal (para probar en local)
+        //   'brevo'   = los envía por la API de Brevo sobre HTTPS (lo que funciona en Render)
+        'driver' => 'archivo',
+        // Correo verificado en Brevo como remitente (por ejemplo, el Gmail del hospital).
+        'remitente' => '',
+        'nombre_remitente' => 'RENACE Hospital',
+        // Clave de la API de Brevo. Nunca aquí: va en la variable de entorno MAIL_API_KEY.
+        'api_key' => '',
+    ],
 ];

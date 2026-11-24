@@ -60,7 +60,7 @@ if ($usuarioSesion !== null) {
     <meta name="theme-color" content="#005EB8">
 </head>
 <body>
-<?php if ($usuarioSesion === null && $rutaActual === '/login'): ?>
+<?php if ($usuarioSesion === null && ($rutaActual === '/login' || str_starts_with($rutaActual, '/recuperar'))): ?>
     <?= $content ?>
 <?php elseif ($usuarioSesion === null): ?>
     <nav class="invitado" aria-label="Marca">

@@ -74,6 +74,10 @@ final class Etiquetas
         'sp_proveedor_guardar' => 'Guardar proveedor',
         'sp_puesto_crear' => 'Crear puesto',
         'sp_puesto_editar' => 'Editar puesto',
+        'sp_recuperacion_completar' => 'Recuperar clave con código',
+        'sp_recuperacion_fallo' => 'Código de recuperación equivocado',
+        'sp_recuperacion_obtener' => 'Consultar código de recuperación',
+        'sp_recuperacion_solicitar' => 'Pedir código para recuperar la clave',
         'sp_seguridad_cambiar_clave' => 'Cambiar clave',
         'sp_seguridad_crear_usuario' => 'Crear usuario',
         'sp_seguridad_editar_usuario' => 'Editar usuario',
@@ -90,6 +94,9 @@ final class Etiquetas
         'LOGOUT' => 'Cierre de sesión',
         'FALLIDO' => 'Intento fallido',
         'CAMBIO_ROL' => 'Cambio de rol',
+        'RECUPERACION_PEDIDA' => 'Pidió código para recuperar la clave',
+        'RECUPERACION_FALLIDA' => 'Código de recuperación equivocado',
+        'RECUPERACION_OK' => 'Recuperó su clave con un código',
     ];
 
     private const RESULTADOS = ['OK' => 'OK', 'ERROR' => 'Error', 'ADVERTENCIA' => 'Advertencia', 'ROLLBACK' => 'Revertido'];

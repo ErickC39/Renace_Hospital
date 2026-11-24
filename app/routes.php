@@ -23,6 +23,7 @@ use App\Controllers\MiClaveController;
 use App\Controllers\NacimientoController;
 use App\Controllers\PacienteController;
 use App\Controllers\PrioridadController;
+use App\Controllers\RecuperarController;
 use App\Controllers\UsuarioController;
 use App\Controllers\VentaController;
 use App\Controllers\VisitaController;
@@ -35,6 +36,11 @@ return static function (Router $router): void {
     $router->get('/login', [AuthController::class, 'showLogin']);
     $router->post('/login', [AuthController::class, 'login']);
     $router->post('/logout', [AuthController::class, 'logout'], Auth::SESION);
+    // Recuperar la clave con un código por correo: públicas, como el login.
+    $router->get('/recuperar', [RecuperarController::class, 'formulario']);
+    $router->post('/recuperar', [RecuperarController::class, 'solicitar']);
+    $router->get('/recuperar/codigo', [RecuperarController::class, 'formularioCodigo']);
+    $router->post('/recuperar/codigo', [RecuperarController::class, 'confirmar']);
     $router->get('/mi-clave', [MiClaveController::class, 'formulario'], Auth::SESION);
     $router->post('/mi-clave', [MiClaveController::class, 'guardar'], Auth::SESION);
 

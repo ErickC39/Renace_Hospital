@@ -16,6 +16,9 @@ final class Config
         'DB_PASSWORD' => ['db', 'password'],
         'DB_DSN' => ['db', 'dsn'],
         'DB_SCHEMA' => ['db', 'schema'],
+        'MAIL_DRIVER' => ['mail', 'driver'],
+        'MAIL_REMITENTE' => ['mail', 'remitente'],
+        'MAIL_API_KEY' => ['mail', 'api_key'],
     ];
 
     /** Variables de entorno de tipo sí/no (true, false, 1, 0). */

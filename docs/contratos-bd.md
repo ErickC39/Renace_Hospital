@@ -352,6 +352,19 @@ Pantalla `/medicos`: la ve quien tiene `cita.ver`; registrar médicos, armar hor
 
 El formulario de crear depende de `EMPLEADO`: sin esa tabla, `vw_seguridad_empleado_libre` no se puede crear.
 
+### Recuperar la clave con un código por correo · `pkg_recuperacion` · errores -20030 a -20032 (script 270)
+
+Pantallas públicas `/recuperar` (pedir el código) y `/recuperar/codigo` (usarlo). El código de 6 dígitos lo genera PHP y a Oracle solo llega su huella bcrypt; se compara en PHP con `password_verify`, igual que la clave en el login. Tabla nueva `RECUPERACION_CLAVE`; la bitácora de accesos acepta tres eventos nuevos: `RECUPERACION_PEDIDA`, `RECUPERACION_FALLIDA` y `RECUPERACION_OK`.
+
+| Procedimiento | Parámetros |
+|---|---|
+| `pkg_recuperacion.sp_recuperacion_solicitar` | IN `p_nombre_usuario`, `p_codigo_hash`, `p_origen` · OUT `p_correo`, `p_nombre` (vacíos si no hay a quién enviar: usuario inexistente, inactivo, sin correo o con 3 solicitudes en 15 minutos). Anula las pendientes y la nueva vence en 10 minutos |
+| `pkg_recuperacion.sp_recuperacion_obtener` | IN `p_nombre_usuario` · OUT `p_id_recuperacion`, `p_codigo_hash` (vacíos si no hay una pendiente, vigente y con menos de 5 intentos) |
+| `pkg_recuperacion.sp_recuperacion_fallo` | IN `p_id_recuperacion`, `p_origen`. Al quinto intento la anula |
+| `pkg_recuperacion.sp_recuperacion_completar` | IN `p_id_recuperacion`, `p_clave_hash`, `p_origen` · OUT `p_correo`, `p_nombre`. Cambia la clave y marca la solicitud como usada; -20032 si ya no sirve |
+
+Correo (`App\Core\Correo`, `mail.driver`): `brevo` envía por la API de Brevo sobre HTTPS (Render gratuito bloquea los puertos 25, 465 y 587); `archivo` escribe el correo en `renace_correos.log` del directorio temporal, para probar en local. Variables de entorno: `MAIL_DRIVER`, `MAIL_REMITENTE`, `MAIL_API_KEY`.
+
 ### Empleados (`/empleados`, permiso `usuario.administrar`) · `pkg_empleado` · errores -20901 a -20949
 
 | Objeto | Columnas o parámetros | Estado |
