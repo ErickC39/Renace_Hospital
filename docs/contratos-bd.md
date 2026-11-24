@@ -396,6 +396,15 @@ En Oracle: cada procedimiento con pasos `inicio` y `fin` anota su tiempo (`Proce
 
 ## Req. 11: Bitácoras
 
+Avisos de la campana (script 280): `vw_registro_avisos` agrega `id_registro_aviso` al final, y `pkg_aviso` marca como leídos. Antes del script la campana y la pestaña de avisos funcionan igual, solo sin los botones de marcar.
+
+| Procedimiento | Parámetros |
+|---|---|
+| `pkg_aviso.sp_aviso_marcar_leido` | IN `p_id_registro_aviso`, `p_id_usuario`. Si ya estaba leído no hace nada; -20040 si no existe |
+| `pkg_aviso.sp_aviso_marcar_dia` | IN `p_fecha` (`YYYY-MM-DD`), `p_id_usuario` · OUT `p_cantidad`; -20041 si la fecha no es válida |
+
+Rutas: `GET /avisos/pendientes` (lista de la campana, se pide al abrirla), `POST /avisos/{id}/leido` y `POST /avisos/leidos`, todas con `registro.ver`. La pestaña Tiempos ya no se muestra; los tiempos siguen guardándose y la tarjeta "Tiempos más altos del día" sigue en Pasos.
+
 Todas filtran por `fecha` (`YYYY-MM-DD`) y formatean la hora con `TO_CHAR(fecha_hora, 'HH24:MI:SS.FF3')`, sin cambiar el tipo de la columna.
 
 | Vista | Columnas |

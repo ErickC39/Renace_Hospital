@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\AvisoController;
 use App\Controllers\BitacoraController;
 use App\Controllers\CitaController;
 use App\Controllers\EmpleadoController;
@@ -135,4 +136,9 @@ return static function (Router $router): void {
     // Bitácoras
     $router->get('/bitacoras', [BitacoraController::class, 'index'], 'registro.ver');
     $router->get('/bitacoras/exportar', [BitacoraController::class, 'exportar'], 'registro.ver');
+
+    // Avisos de la campana: verlos y marcarlos como leídos (marcar necesita el script 280)
+    $router->get('/avisos/pendientes', [AvisoController::class, 'pendientes'], 'registro.ver');
+    $router->post('/avisos/leidos', [AvisoController::class, 'marcarDia'], 'registro.ver');
+    $router->post('/avisos/{id}/leido', [AvisoController::class, 'marcar'], 'registro.ver');
 };

@@ -39,6 +39,35 @@
         });
     }
 
+    // Campana de avisos: la lista se pide al servidor la primera vez que se abre, así no
+    // agrega una consulta a cada página. Se cierra al tocar fuera o con Escape.
+    const botonAvisos = document.querySelector('[data-avisos]');
+    if (botonAvisos) {
+        const panelAvisos = document.getElementById(botonAvisos.getAttribute('aria-controls'));
+        let cargado = false;
+        const mostrarAvisos = function (abierto) {
+            panelAvisos.hidden = !abierto;
+            botonAvisos.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+            if (abierto && !cargado) {
+                cargado = true;
+                fetch('/avisos/pendientes', { credentials: 'same-origin' })
+                    .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.text(); })
+                    .then(function (html) { panelAvisos.innerHTML = html; })
+                    .catch(function () {
+                        cargado = false;
+                        panelAvisos.innerHTML = '<p class="muted avisos-vacio">No se pudieron cargar los avisos. <a href="/bitacoras?tab=avisos">Ver la pestaña de avisos</a></p>';
+                    });
+            }
+        };
+        botonAvisos.addEventListener('click', function () { mostrarAvisos(panelAvisos.hidden); });
+        document.addEventListener('click', function (evento) {
+            if (!panelAvisos.hidden && !evento.target.closest('.menu-avisos')) { mostrarAvisos(false); }
+        });
+        document.addEventListener('keydown', function (evento) {
+            if (evento.key === 'Escape' && !panelAvisos.hidden) { mostrarAvisos(false); botonAvisos.focus(); }
+        });
+    }
+
     // Ventanas emergentes (ficha del empleado, editar puesto): se abren con data-abrir="id".
     document.querySelectorAll('[data-abrir]').forEach(function (boton) {
         boton.addEventListener('click', function () {

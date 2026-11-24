@@ -52,6 +52,11 @@ final class Router
     {
         $path = '/' . trim((string) parse_url($uri, PHP_URL_PATH), '/');
         $method = strtoupper($method);
+        // HEAD es un GET sin cuerpo: Render lo usa para revisar que el sitio responda al publicar.
+        // Sin esto daba 405 y llenaba la bitácora de errores después de cada publicación.
+        if ($method === 'HEAD') {
+            $method = 'GET';
+        }
         $pathExists = false;
 
         foreach ($this->routes as $route) {

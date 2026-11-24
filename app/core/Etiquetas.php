@@ -42,10 +42,12 @@ final class Etiquetas
     ];
 
     private const PROCESOS = [
-        'acceso' => 'Acceso al sistema',
-        'login' => 'Inicio de sesión',
+        'acceso' => 'Registro del acceso',
+        'login' => 'Revisión de la clave',
         'sp_categoria_enfermedad_guardar' => 'Guardar categoría de enfermedad',
         'sp_categoria_producto_guardar' => 'Guardar categoría de producto',
+        'sp_aviso_marcar_dia' => 'Marcar avisos del día como leídos',
+        'sp_aviso_marcar_leido' => 'Marcar aviso como leído',
         'sp_cita_agendar' => 'Agendar cita',
         'sp_cita_dar_prioridad' => 'Dar prioridad a una cita',
         'sp_cita_iniciar_atencion' => 'Iniciar atención',
@@ -97,6 +99,17 @@ final class Etiquetas
         'RECUPERACION_PEDIDA' => 'Pidió código para recuperar la clave',
         'RECUPERACION_FALLIDA' => 'Código de recuperación equivocado',
         'RECUPERACION_OK' => 'Recuperó su clave con un código',
+    ];
+
+    /** Pasos que la base anota con su nombre interno. */
+    private const PASOS = [
+        'inicio' => 'Inicio',
+        'fin' => 'Fin',
+        'obtener_credencial' => 'Clave consultada',
+        'registrar_login' => 'Entrada al sistema',
+        'registrar_logout' => 'Salida del sistema',
+        'registrar_fallido' => 'Intento fallido',
+        'registrar_cambio_rol' => 'Cambio de rol',
     ];
 
     private const RESULTADOS = ['OK' => 'OK', 'ERROR' => 'Error', 'ADVERTENCIA' => 'Advertencia', 'ROLLBACK' => 'Revertido'];
@@ -173,6 +186,9 @@ final class Etiquetas
     /** "PEDIDO 5" → "Pedido 5". Las demás referencias (cédula, usuario) quedan igual. */
     public static function referencia(string $referencia): string
     {
+        if (preg_match('/^AVISOS (\d{4})-(\d{2})-(\d{2})$/', $referencia, $m) === 1) {
+            return "Avisos del {$m[3]}/{$m[2]}/{$m[1]}";
+        }
         return preg_match('/^[A-Z]+ \d+$/', $referencia) === 1 ? self::legible($referencia) : $referencia;
     }
 
@@ -199,7 +215,7 @@ final class Etiquetas
             'tipo_objeto' => stripos($valor, 'vista') !== false ? 'Consulta' : 'Operación',
             'referencia' => self::referencia($valor),
             'mensaje' => self::mensaje($valor),
-            'paso' => preg_match('/^[a-z_]+$/', $valor) === 1 ? self::legible($valor) : $valor,
+            'paso' => self::PASOS[$valor] ?? (preg_match('/^[a-z_]+$/', $valor) === 1 ? self::legible($valor) : $valor),
             'leido' => $valor === 'S' ? 'Leído' : 'Sin leer',
             default => $valor,
         };

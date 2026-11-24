@@ -9,15 +9,20 @@
  * @var string $ref
  * @var list<array<string, mixed>> $rastro
  * @var list<array<string, mixed>> $tiempos
+ * @var array<string, string> $nombresRef Referencias de acceso (id de usuario) con el nombre del usuario.
  */
 
+use App\Core\Csrf;
 use App\Core\Etiquetas;
 use App\Models\Bitacora;
 
 $columnas = Bitacora::TABS[$tab][2];
 $errores = $totales['errores'] ?? 0;
-$sinLeer = $tab === 'avisos' ? count(array_filter($filas, static fn(array $f): bool => $f['leido'] !== 'S')) : 0;
+$sinLeer = $totales['avisos_sin_leer'] ?? 0;
 $url = static fn(array $extra): string => '/bitacoras?' . http_build_query(['fecha' => $fecha] + $extra + array_filter($filtros));
+// Marcar avisos como leídos solo si la vista ya trae su número (script 280).
+$marcaAvisos = $tab === 'avisos' && $filas !== [] && array_key_exists('id_registro_aviso', $filas[0]);
+$volverAqui = $url(['tab' => $tab]);
 $hayRollback = array_filter($rastro, static fn(array $r): bool => $r['clase'] === 'error') !== [];
 $celda = static function (string $col, mixed $valor): string {
     return match ($col) {
@@ -45,14 +50,22 @@ $formatoMs = static function (float $ms): string {
     <div>
         <h1>Bitácoras</h1>
         <?php if ($tab === 'avisos'): ?>
-            <p><strong><?= count($filas) ?> avisos</strong> este día y <strong><?= $sinLeer ?> sin leer</strong>.</p>
+            <p><strong><?= ($totales['avisos'] ?? 0) === 1 ? '1 aviso' : ($totales['avisos'] ?? 0) . ' avisos' ?></strong> este día y <strong><?= $sinLeer ?> sin leer</strong>.</p>
         <?php elseif ($errores > 0): ?>
             <p>Este día hubo <strong><?= $errores ?> <?= $errores === 1 ? 'error' : 'errores' ?></strong>. Revisa su rastro para ver qué se deshizo.</p>
         <?php else: ?>
             <p>Este día no hubo errores. Todo lo que pasó está trazado.</p>
         <?php endif; ?>
     </div>
-    <div class="actions"><a class="btn btn-outline" href="/bitacoras/exportar?<?= e(http_build_query(['tab' => $tab, 'fecha' => $fecha] + array_filter($filtros))) ?>"><i class="bi bi-download"></i>Exportar</a></div>
+    <div class="actions">
+        <?php if ($marcaAvisos && $sinLeer > 0): ?>
+            <form method="post" action="/avisos/leidos">
+                <?= Csrf::field() ?><input type="hidden" name="fecha" value="<?= e($fecha) ?>"><input type="hidden" name="volver" value="<?= e($volverAqui) ?>">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2-all" aria-hidden="true"></i>Marcar todos como leídos</button>
+            </form>
+        <?php endif; ?>
+        <a class="btn btn-outline" href="/bitacoras/exportar?<?= e(http_build_query(['tab' => $tab, 'fecha' => $fecha] + array_filter($filtros))) ?>"><i class="bi bi-download"></i>Exportar</a>
+    </div>
 </div>
 
 <nav class="tabs" aria-label="Bitácoras">
@@ -79,23 +92,35 @@ $formatoMs = static function (float $ms): string {
     <div class="stack">
         <section class="card card-tabla">
             <?php if ($filas === []): ?>
-                <p class="muted my-3">No hay registros de <?= e(mb_strtolower(Bitacora::TABS[$tab][0])) ?> ese día.</p>
+                <p class="muted my-3"><?= array_filter($filtros) !== []
+                    ? 'Ningún registro con esos filtros ese día. Cambia o quita el filtro para ver los demás.'
+                    : 'No hay registros de ' . e(mb_strtolower(Bitacora::TABS[$tab][0])) . ' ese día.' ?></p>
             <?php else: ?>
             <div class="table-responsive">
             <table class="table" data-paginar>
-                <thead><tr><?php foreach ($columnas as $titulo): ?><th><?= e($titulo) ?></th><?php endforeach; ?></tr></thead>
+                <thead><tr><?php foreach ($columnas as $titulo): ?><th><?= e($titulo) ?></th><?php endforeach; ?><?php if ($marcaAvisos): ?><th></th><?php endif; ?></tr></thead>
                 <tbody>
                 <?php foreach ($filas as $f): $on = $tab === 'pasos' && (string) $f['referencia'] === $ref; ?>
                     <tr class="<?= $on ? 'sel' : '' ?>">
                         <?php foreach (array_keys($columnas) as $col): ?>
                             <td class="<?= in_array($col, ['hora', 'referencia'], true) ? 'nowrap' : '' ?>">
                                 <?php if ($col === 'referencia'): ?>
-                                    <a href="<?= e($url(['tab' => 'pasos', 'ref' => $f[$col]])) ?>"><?= e(Etiquetas::referencia((string) $f[$col])) ?></a>
+                                    <a href="<?= e($url(['tab' => 'pasos', 'ref' => $f[$col]])) ?>"><?= e($nombresRef[(string) $f[$col]] ?? Etiquetas::referencia((string) $f[$col])) ?></a>
                                 <?php else: ?>
                                     <?= $celda($col, $f[$col]) ?>
                                 <?php endif; ?>
                             </td>
                         <?php endforeach; ?>
+                        <?php if ($marcaAvisos): ?>
+                            <td class="num">
+                                <?php if (($f['leido'] ?? '') !== 'S'): ?>
+                                    <form method="post" action="/avisos/<?= (int) $f['id_registro_aviso'] ?>/leido">
+                                        <?= Csrf::field() ?><input type="hidden" name="volver" value="<?= e($volverAqui) ?>">
+                                        <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-check2" aria-hidden="true"></i>Leído</button>
+                                    </form>
+                                <?php endif; ?>
+                            </td>
+                        <?php endif; ?>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -107,6 +132,7 @@ $formatoMs = static function (float $ms): string {
         <?php if ($tab === 'pasos' && $tiempos !== []): ?>
         <section class="card">
             <div class="card-h"><h2>Tiempos más altos del día</h2><span>Consultas máx. 10 ms · operaciones máx. 2 s</span></div>
+            <p class="hint">Las consultas se miden desde el servidor web, así que incluyen el viaje por internet hasta la base de datos. Las operaciones se miden dentro de Oracle.</p>
             <?php foreach ($tiempos as $t):
                 $ms = numero($t['duracion_ms']);
                 $limite = $t['tipo_objeto'] === 'Vista' ? 10 : 2000;
@@ -123,7 +149,7 @@ $formatoMs = static function (float $ms): string {
 
     <?php if ($tab === 'pasos'): ?>
     <section class="card align-self-start">
-        <div class="card-h"><h2>Rastro de <?= $ref !== '' ? e(Etiquetas::referencia($ref)) : 'una referencia' ?></h2><?= $hayRollback ? pill('Revertido', 'warn') : '' ?></div>
+        <div class="card-h"><h2>Rastro de <?= $ref !== '' ? e($nombresRef[$ref] ?? Etiquetas::referencia($ref)) : 'una referencia' ?></h2><?= $hayRollback ? pill('Revertido', 'warn') : '' ?></div>
         <?php if ($rastro === []): ?>
             <p class="muted mb-0">Elige una referencia de la tabla para ver su rastro.</p>
         <?php else: ?>

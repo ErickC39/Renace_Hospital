@@ -89,9 +89,12 @@ if ($usuarioSesion !== null) {
             <div class="right">
                 <span class="fecha" data-reloj><?= e(fecha_larga()) ?></span>
                 <?php if (($sinLeer = $marcadores['avisos']) !== null): ?>
-                    <a class="iconbtn" href="/bitacoras?tab=avisos" aria-label="Avisos sin leer: <?= e($sinLeer) ?>">
-                        <i class="bi bi-bell"></i><?php if ($sinLeer > 0): ?><b><?= e($sinLeer) ?></b><?php endif; ?>
-                    </a>
+                    <div class="menu-avisos">
+                        <button type="button" class="iconbtn" data-avisos aria-controls="panel-avisos" aria-expanded="false" aria-label="Avisos sin leer: <?= e($sinLeer) ?>">
+                            <i class="bi bi-bell"></i><?php if ($sinLeer > 0): ?><b><?= e($sinLeer) ?></b><?php endif; ?>
+                        </button>
+                        <div class="panel-avisos" id="panel-avisos" hidden><p class="muted avisos-vacio">Cargando avisos...</p></div>
+                    </div>
                 <?php endif; ?>
                 <div class="menu-cuenta">
                     <button type="button" class="iconbtn" data-menu aria-controls="panel-cuenta" aria-expanded="false" aria-label="Abrir el menú"><i class="bi bi-list"></i></button>

@@ -22,7 +22,8 @@ final class BitacoraController
         $filas = $modelo->filas($tab, $fecha, $filtros);
         $valores = [];
         foreach (array_keys($filtros) as $columna) {
-            $valores[$columna] = $modelo->valores($tab, $columna, $fecha);
+            // Leído o sin leer siempre se ofrecen los dos, aunque ese día no queden de alguno.
+            $valores[$columna] = $columna === 'leido' ? ['N', 'S'] : $modelo->valores($tab, $columna, $fecha);
         }
 
         $ref = consulta('ref');
@@ -47,6 +48,7 @@ final class BitacoraController
             'ref' => $ref,
             'rastro' => $tab === 'pasos' && $ref !== '' ? $modelo->rastro($ref, $fecha) : [],
             'tiempos' => $tab === 'pasos' ? $modelo->tiemposAltos($fecha) : [],
+            'nombresRef' => $tab === 'pasos' ? $this->nombresDeReferencia($modelo, $filas) : [],
         ]);
     }
 
@@ -68,6 +70,27 @@ final class BitacoraController
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="bitacora-' . $tab . '-' . $fecha . '.csv"',
         ]);
+    }
+
+    /**
+     * Referencias de los pasos de acceso (el id del usuario) con el nombre del usuario.
+     *
+     * @param list<array<string, mixed>> $filas
+     * @return array<string, string> referencia => texto a mostrar
+     */
+    private function nombresDeReferencia(Bitacora $modelo, array $filas): array
+    {
+        $ids = [];
+        foreach ($filas as $f) {
+            if (($f['proceso'] ?? '') === 'acceso' && ctype_digit((string) $f['referencia'])) {
+                $ids[] = (int) $f['referencia'];
+            }
+        }
+        $nombres = [];
+        foreach ($modelo->nombresDeUsuario($ids) as $id => $nombre) {
+            $nombres[(string) $id] = 'Usuario ' . $nombre;
+        }
+        return $nombres;
     }
 
     private function tab(): string
