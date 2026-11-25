@@ -14,6 +14,7 @@
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Etiquetas;
 
 $maxEspera = 60;
 
@@ -159,7 +160,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
             $alerta = $min >= $maxEspera * 0.9; ?>
             <div class="espera">
                 <div class="line p-0"><span class="strong"><?= e($e['paciente']) ?></span><span class="num strong <?= $alerta ? 'alerta' : '' ?>"><?= $min ?> min</span></div>
-                <span class="sub"><?= e($e['tipo_cita']) ?> · <?= e($e['medico']) ?> · cita <?= e($e['hora_programada']) ?></span>
+                <span class="sub"><?= e(Etiquetas::legible((string) $e['tipo_cita'])) ?> · <?= e($e['medico']) ?> · cita <?= e($e['hora_programada']) ?></span>
                 <div class="meter"><i class="<?= $alerta ? 'warn' : '' ?>" style="width:<?= min(100, round($min / $maxEspera * 100)) ?>%"></i></div>
                 <?php if (Auth::can('cita.atender')): ?>
                     <form method="post" action="/citas/<?= e($e['id_cita']) ?>/iniciar" class="mt-1">
@@ -189,7 +190,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
         <?php if ($atencion === null): ?>
             <p class="muted mb-0">Ningún paciente está en atención. Inicia una cita desde la sala de espera.</p>
         <?php else: ?>
-            <p class="mb-2"><b class="strong"><?= e($atencion['paciente']) ?></b> <span class="muted">· <?= e($atencion['medico']) ?> · <?= e($atencion['tipo_cita']) ?> · Cita <code>C-<?= e(str_pad((string) $atencion['id_cita'], 5, '0', STR_PAD_LEFT)) ?></code></span></p>
+            <p class="mb-2"><b class="strong"><?= e($atencion['paciente']) ?></b> <span class="muted">· <?= e($atencion['medico']) ?> · <?= e(Etiquetas::legible((string) $atencion['tipo_cita'])) ?> · Cita <code>C-<?= e(str_pad((string) $atencion['id_cita'], 5, '0', STR_PAD_LEFT)) ?></code></span></p>
             <ol class="steps">
                 <li class="done"><b>Agendada</b><span><?= e($atencion['fecha_agenda']) ?></span></li>
                 <li class="done"><b>Llegó</b><span><?= e($atencion['hora_llegada']) ?></span></li>
@@ -253,7 +254,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
                     <td><?= e($t['paciente']) ?><span class="sub"><?= e($t['documento']) ?></span></td>
                     <td><?= e($t['medico']) ?><span class="sub"><?= e($t['especialidad']) ?></span></td>
                     <td><?= e($t['consultorio'] ?? '') ?></td>
-                    <td><?= e($t['tipo_cita']) ?><?= $t['es_prioritaria'] === 'S' ? ' ' . pill('Prioridad', 'warn') : '' ?></td>
+                    <td><?= e(Etiquetas::legible((string) $t['tipo_cita'])) ?></td>
                     <td><?= pill($texto, $tipo) ?></td>
                 </tr>
             <?php endforeach; ?>

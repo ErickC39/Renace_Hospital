@@ -822,9 +822,9 @@ final class ModulosTest extends TestCase
     {
         $this->bd(['FROM vw_cita_lista' => [
             ['id_cita' => '7', 'fecha' => '2026-12-03', 'hora' => '09:30', 'paciente' => 'Karla Jiménez', 'documento' => '3-0512-0674',
-                'medico' => 'Sofía Méndez', 'especialidad' => 'Ginecología', 'consultorio' => 'Consultorio 2', 'tipo_cita' => 'Primera vez', 'estado' => 'PROGRAMADA', 'es_prioritaria' => 'N'],
+                'medico' => 'Sofía Méndez', 'especialidad' => 'Ginecología', 'consultorio' => 'Consultorio 2', 'tipo_cita' => 'PRIMERA_VEZ', 'estado' => 'PROGRAMADA', 'es_prioritaria' => 'N'],
             ['id_cita' => '2', 'fecha' => '2026-10-15', 'hora' => '08:00', 'paciente' => 'Roberto Chacón', 'documento' => '1-0623-0147',
-                'medico' => 'Carlos Pérez', 'especialidad' => 'Medicina general', 'consultorio' => null, 'tipo_cita' => 'Control', 'estado' => 'ATENDIDA', 'es_prioritaria' => 'S'],
+                'medico' => 'Carlos Pérez', 'especialidad' => 'Medicina general', 'consultorio' => null, 'tipo_cita' => 'PRIORITARIA_EMPLEADO', 'estado' => 'ATENDIDA', 'es_prioritaria' => 'S'],
         ]]);
         $this->entrar(['cita.ver']);
 
@@ -835,6 +835,8 @@ final class ModulosTest extends TestCase
         $this->assertStringContainsString('15/10/2026', $html);
         $this->assertStringContainsString('Atendida', $html);
         $this->assertStringContainsString('2 citas', $html);
+        $this->assertStringContainsString('Primera vez', $html);
+        $this->assertStringNotContainsString('PRIORITARIA_EMPLEADO', $html);
     }
 
     public function testElFiltroDeCitasPasaLasFechasYSinLaVistaAvisa(): void
