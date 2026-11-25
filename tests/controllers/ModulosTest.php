@@ -818,6 +818,84 @@ final class ModulosTest extends TestCase
         $this->assertStringContainsString('data-grupo="3"', $html);
     }
 
+    public function testCitasMuestraTodasLasCitasPasadasYFuturas(): void
+    {
+        $this->bd(['FROM vw_cita_lista' => [
+            ['id_cita' => '7', 'fecha' => '2026-12-03', 'hora' => '09:30', 'paciente' => 'Karla Jiménez', 'documento' => '3-0512-0674',
+                'medico' => 'Sofía Méndez', 'especialidad' => 'Ginecología', 'consultorio' => 'Consultorio 2', 'tipo_cita' => 'Primera vez', 'estado' => 'PROGRAMADA', 'es_prioritaria' => 'N'],
+            ['id_cita' => '2', 'fecha' => '2026-10-15', 'hora' => '08:00', 'paciente' => 'Roberto Chacón', 'documento' => '1-0623-0147',
+                'medico' => 'Carlos Pérez', 'especialidad' => 'Medicina general', 'consultorio' => null, 'tipo_cita' => 'Control', 'estado' => 'ATENDIDA', 'es_prioritaria' => 'S'],
+        ]]);
+        $this->entrar(['cita.ver']);
+
+        $html = $this->app()->handle('GET', '/citas')->body;
+
+        $this->assertStringContainsString('Todas las citas', $html);
+        $this->assertStringContainsString('03/12/2026', $html);
+        $this->assertStringContainsString('15/10/2026', $html);
+        $this->assertStringContainsString('Atendida', $html);
+        $this->assertStringContainsString('2 citas', $html);
+    }
+
+    public function testElFiltroDeCitasPasaLasFechasYSinLaVistaAvisa(): void
+    {
+        $db = new class implements \App\Core\DatabaseInterface {
+            /** @var array<string, mixed> */
+            public array $binds = [];
+
+            public function call(string $procedure, array $in = [], array $out = []): array
+            {
+                return array_fill_keys($out, '1');
+            }
+
+            public function select(string $sql, array $binds = []): array
+            {
+                if (str_contains($sql, 'vw_cita_lista')) {
+                    $this->binds = $binds;
+                    throw new \RuntimeException('ORA-00942: la tabla o vista no existe', 942);
+                }
+                return [];
+            }
+        };
+        Database::set($db);
+        $this->entrar(['cita.ver']);
+        $_GET = ['desde' => '2026-11-01', 'hasta' => '30/11/2026'];
+
+        $html = $this->app()->handle('GET', '/citas')->body;
+
+        $this->assertSame(['desde' => '2026-11-01', 'hasta' => null], $db->binds);
+        $this->assertStringContainsString('cuando se instale la actualización de la base de datos', $html);
+    }
+
+    public function testNacimientosRecientesSalenDelMasNuevoAlMasViejo(): void
+    {
+        $db = new class implements \App\Core\DatabaseInterface {
+            public string $sql = '';
+
+            public function call(string $procedure, array $in = [], array $out = []): array
+            {
+                return array_fill_keys($out, '1');
+            }
+
+            public function select(string $sql, array $binds = []): array
+            {
+                if (str_contains($sql, 'vw_nacimiento_reciente')) {
+                    $this->sql = $sql;
+                    return [['bebe' => 'Mateo Solís Jiménez', 'madre' => 'Karla Jiménez', 'medico' => 'Sofía Méndez', 'fecha_hora' => '24/11/2026 21:15',
+                        'tipo_parto' => 'Vaginal', 'semanas_gestacion' => '39', 'peso_gr' => '3250', 'talla_cm' => '50', 'apgar_minuto_1' => '8', 'apgar_minuto_5' => '9']];
+                }
+                return [];
+            }
+        };
+        Database::set($db);
+        $this->entrar(['nacimiento.registrar']);
+
+        $html = $this->app()->handle('GET', '/nacimientos')->body;
+
+        $this->assertStringContainsString('Mateo Solís Jiménez', $html);
+        $this->assertStringContainsString("ORDER BY TO_DATE(fecha_hora, 'DD/MM/YYYY HH24:MI') DESC", $db->sql);
+    }
+
     public function testAgregarHabitacionLlegaConElNumeroEnMayusculasYSinArea(): void
     {
         $db = $this->bd();

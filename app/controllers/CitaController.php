@@ -25,6 +25,13 @@ final class CitaController extends Controlador
 
         $persona = (new Persona())->porDocumento($documento);
         $libres = $idMedico > 0 && $fecha !== '' ? $cita->espaciosLibres($idMedico, $fecha) : [];
+        // Filtro de la lista completa: fechas aaaa-mm-dd o vacías (sin límite).
+        $filtro = ['desde' => consulta('desde'), 'hasta' => consulta('hasta')];
+        foreach ($filtro as $campo => $valor) {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor) !== 1) {
+                $filtro[$campo] = '';
+            }
+        }
 
         return View::render('citas/index', [
             'titulo' => 'Citas',
@@ -36,6 +43,8 @@ final class CitaController extends Controlador
             'form' => ['documento' => $documento, 'id_medico' => $idMedico, 'fecha' => $fecha, 'hora' => $hora],
             'persona' => $persona,
             'libres' => $libres,
+            'todas' => $cita->todas($filtro['desde'], $filtro['hasta']),
+            'filtro' => $filtro,
         ]);
     }
 

@@ -20,6 +20,31 @@ final class Cita extends Modelo
         );
     }
 
+    /**
+     * Todas las citas, de cualquier día y estado, entre dos fechas opcionales (aaaa-mm-dd).
+     * Devuelve null si la base todavía no tiene la vista (ORA-00942), para avisar en la pantalla.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    public function todas(string $desde, string $hasta): ?array
+    {
+        try {
+            return $this->db->select(
+                "SELECT id_cita, fecha, hora, paciente, documento, medico, especialidad, consultorio, tipo_cita, estado, es_prioritaria
+                   FROM vw_cita_lista
+                  WHERE (:desde IS NULL OR fecha >= :desde)
+                    AND (:hasta IS NULL OR fecha <= :hasta)
+                  ORDER BY fecha DESC, hora",
+                ['desde' => $desde === '' ? null : $desde, 'hasta' => $hasta === '' ? null : $hasta],
+            );
+        } catch (\RuntimeException $e) {
+            if ($e->getCode() !== 942) {
+                throw $e;
+            }
+            return null;
+        }
+    }
+
     /** @return list<array<string, mixed>> */
     public function salaDeEspera(): array
     {

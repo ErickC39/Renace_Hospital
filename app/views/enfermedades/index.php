@@ -46,7 +46,7 @@ $tiempo = static fn(int $h): string => $h === 168 ? 'cada semana' : "cada {$h} h
                 <td><a href="/medicamentos?id=<?= e($f['id_medicamento']) ?>"><?= e($f['medicamento']) ?></a></td>
                 <td><?= e($f['dosis']) ?></td>
                 <td class="num"><?= e($tiempo((int) $f['frecuencia_horas'])) ?></td>
-                <td class="num"><?= e($f['duracion_dias']) ?> días</td>
+                <td class="num"><?= e($f['duracion_dias']) ?> <?= (int) $f['duracion_dias'] === 1 ? 'día' : 'días' ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>

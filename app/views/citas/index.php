@@ -8,6 +8,8 @@
  * @var array{documento:string, id_medico:int, fecha:string, hora:string} $form
  * @var array<string, mixed>|null $persona
  * @var list<string> $libres
+ * @var list<array<string, mixed>>|null $todas Todas las citas, o null si falta la vista en la base.
+ * @var array{desde:string, hasta:string} $filtro
  */
 
 use App\Core\Auth;
@@ -216,3 +218,48 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
         <?php endif; ?>
     </section>
 </div>
+
+<section class="card mt-3" id="todas">
+    <div class="card-h"><h2>Todas las citas</h2><span>Pasadas, de hoy y futuras</span></div>
+    <?php if ($todas === null): ?>
+        <p class="muted mb-0">La lista completa estará disponible cuando se instale la actualización de la base de datos.</p>
+    <?php else:
+        $estados = ['PROGRAMADA' => ['Programada', 'info'], 'EN_ESPERA' => ['En espera', 'warn'], 'EN_ATENCION' => ['En atención', 'info'],
+            'ATENDIDA' => ['Atendida', 'neu'], 'CANCELADA' => ['Cancelada', 'bad'], 'MOVIDA' => ['Movida', 'warn']];
+        $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+        $dia = static fn(string $iso): string => $iso === $hoy ? 'Hoy' : (string) date_create($iso)?->format('d/m/Y'); ?>
+        <form class="toolbar" method="get" action="/citas#todas">
+            <label class="form-label mb-0" for="desde">Desde</label>
+            <input class="form-control ancho-190" type="date" id="desde" name="desde" value="<?= e($filtro['desde']) ?>">
+            <label class="form-label mb-0" for="hasta">Hasta</label>
+            <input class="form-control ancho-190" type="date" id="hasta" name="hasta" value="<?= e($filtro['hasta']) ?>">
+            <button class="btn btn-outline btn-sm" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i>Filtrar</button>
+            <?php if ($filtro['desde'] !== '' || $filtro['hasta'] !== ''): ?>
+                <a class="btn btn-outline btn-sm" href="/citas#todas">Ver todas</a>
+            <?php endif; ?>
+            <span class="sp"><?= count($todas) ?> <?= count($todas) === 1 ? 'cita' : 'citas' ?>, la fecha más reciente primero</span>
+        </form>
+        <?php if ($todas === []): ?>
+            <p class="muted mb-0"><?= $filtro['desde'] !== '' || $filtro['hasta'] !== '' ? 'No hay citas en esas fechas.' : 'Todavía no hay citas.' ?></p>
+        <?php else: ?>
+        <div class="table-responsive">
+        <table class="table" data-paginar>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Médico</th><th>Consultorio</th><th>Tipo</th><th>Estado</th></tr></thead>
+            <tbody>
+            <?php foreach ($todas as $t): [$texto, $tipo] = $estados[$t['estado']] ?? [(string) $t['estado'], 'neu']; ?>
+                <tr>
+                    <td class="nowrap"><?= e($dia((string) $t['fecha'])) ?></td>
+                    <td class="nowrap"><code><?= e($t['hora']) ?></code></td>
+                    <td><?= e($t['paciente']) ?><span class="sub"><?= e($t['documento']) ?></span></td>
+                    <td><?= e($t['medico']) ?><span class="sub"><?= e($t['especialidad']) ?></span></td>
+                    <td><?= e($t['consultorio'] ?? '') ?></td>
+                    <td><?= e($t['tipo_cita']) ?><?= $t['es_prioritaria'] === 'S' ? ' ' . pill('Prioridad', 'warn') : '' ?></td>
+                    <td><?= pill($texto, $tipo) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php endif; ?>
+    <?php endif; ?>
+</section>

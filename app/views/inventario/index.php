@@ -52,7 +52,7 @@ $camposProducto = static function (?array $p, string $px) use ($categorias): str
         <?php if ($productos === []): ?>
             <p>Todavía no hay productos. Agrega el primero y luego registra su entrada.</p>
         <?php elseif ($urgente !== null): ?>
-            <p><strong><?= count($bajos) ?> productos</strong> están bajo el mínimo. <?= e($urgente['nombre']) ?> es el más urgente: quedan <?= e($urgente['existencias']) ?> de <?= e($urgente['stock_minimo']) ?>.</p>
+            <p><strong><?= count($bajos) === 1 ? "1 producto</strong> está" : count($bajos) . " productos</strong> están" ?> bajo el mínimo. <?= e($urgente['nombre']) ?> es el más urgente: quedan <?= e($urgente['existencias']) ?> de <?= e($urgente['stock_minimo']) ?>.</p>
         <?php else: ?>
             <p>Ningún producto está bajo el mínimo.</p>
         <?php endif; ?>

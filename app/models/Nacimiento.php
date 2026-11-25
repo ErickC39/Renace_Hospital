@@ -25,8 +25,9 @@ final class Nacimiento extends Modelo
     public function recientes(): array
     {
         return $this->db->select(
-            'SELECT bebe, madre, medico, fecha_hora, tipo_parto, semanas_gestacion, peso_gr, talla_cm, apgar_minuto_1, apgar_minuto_5
-               FROM vw_nacimiento_reciente',
+            "SELECT bebe, madre, medico, fecha_hora, tipo_parto, semanas_gestacion, peso_gr, talla_cm, apgar_minuto_1, apgar_minuto_5
+               FROM vw_nacimiento_reciente
+              ORDER BY TO_DATE(fecha_hora, 'DD/MM/YYYY HH24:MI') DESC",
         );
     }
 

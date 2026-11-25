@@ -91,7 +91,7 @@ if (count($horas) >= 2) {
             <div class="card-h"><h2>Se usa para tratar</h2><span><?= count($tratamientos) ?> enfermedades</span></div>
             <?php if ($tratamientos === []): ?><p class="muted mb-0">Sin enfermedades enlazadas.</p><?php endif; ?>
             <?php foreach ($tratamientos as $t): ?>
-                <div class="line con-regla"><span><code><?= e($t['codigo_cie10']) ?></code> <?= e($t['enfermedad']) ?></span><span class="muted"><?= e($t['dosis']) ?> cada <?= e($t['frecuencia_horas']) ?> h, <?= e($t['duracion_dias']) ?> días</span></div>
+                <div class="line con-regla"><span><code><?= e($t['codigo_cie10']) ?></code> <?= e($t['enfermedad']) ?></span><span class="muted"><?= e($t['dosis']) ?> cada <?= e($t['frecuencia_horas']) ?> h, <?= e($t['duracion_dias']) ?> <?= (int) $t['duracion_dias'] === 1 ? 'día' : 'días' ?></span></div>
             <?php endforeach; ?>
         </section>
     </div>
