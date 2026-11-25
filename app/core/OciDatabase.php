@@ -57,11 +57,17 @@ final class OciDatabase implements DatabaseInterface
         }
         // Un solo viaje a Oracle: configura la sesión y entrega los tiempos de la página anterior.
         // Si pkg_bitacora todavía no está instalado, la sesión abre igual.
+        //
+        // Zona horaria: la sesión usa la del servidor de la base (la de SYSTIMESTAMP). Las columnas
+        // TIMESTAMP guardan la hora local de la VM sin zona; al compararlas con SYSTIMESTAMP, Oracle las
+        // interpreta en la zona de la sesión. En Render (UTC) un código que vencía en 10 minutos salía
+        // vencido de inmediato, porque la hora guardada se leía 6 horas antes.
         $stmt = $this->parse(
             "DECLARE
                  v_lista VARCHAR2(4000) := :tiempos;
              BEGIN
                  EXECUTE IMMEDIATE :sesion;
+                 EXECUTE IMMEDIATE 'ALTER SESSION SET TIME_ZONE = ''' || TO_CHAR(SYSTIMESTAMP, 'TZH:TZM') || '''';
                  IF v_lista IS NOT NULL THEN
                      BEGIN
                          EXECUTE IMMEDIATE 'BEGIN pkg_bitacora.sp_bitacora_tiempos(:lista); END;' USING v_lista;
