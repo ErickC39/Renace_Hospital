@@ -22,16 +22,28 @@ final class Paciente extends Modelo
         );
     }
 
-    /** @return array<string, mixed>|null */
+    /**
+     * La ficha del paciente. tipo_documento, edad_dias, id_paciente_madre y madre llegan vacíos si la
+     * base todavía no los trae (ORA-00904).
+     *
+     * @return array<string, mixed>|null
+     */
     public function ficha(int $idPaciente): ?array
     {
-        return $this->db->select(
-            'SELECT id_paciente, nombre_completo, numero_documento, edad, sexo, tipo_sangre, ultima_cita, proxima_revision,
-                    contacto_emergencia, telefono_emergencia, estado, total_controles
-               FROM vw_paciente_ficha
-              WHERE id_paciente = :id_paciente',
-            ['id_paciente' => $idPaciente],
-        )[0] ?? null;
+        $columnas = 'id_paciente, nombre_completo, numero_documento, edad, sexo, tipo_sangre, ultima_cita, proxima_revision,
+                     contacto_emergencia, telefono_emergencia, estado, total_controles';
+        try {
+            return $this->db->select(
+                "SELECT {$columnas}, tipo_documento, edad_dias, id_paciente_madre, madre FROM vw_paciente_ficha WHERE id_paciente = :id_paciente",
+                ['id_paciente' => $idPaciente],
+            )[0] ?? null;
+        } catch (\RuntimeException $e) {
+            if ($e->getCode() !== 904) {
+                throw $e;
+            }
+        }
+        $fila = $this->db->select("SELECT {$columnas} FROM vw_paciente_ficha WHERE id_paciente = :id_paciente", ['id_paciente' => $idPaciente])[0] ?? null;
+        return $fila === null ? null : $fila + ['tipo_documento' => null, 'edad_dias' => null, 'id_paciente_madre' => null, 'madre' => null];
     }
 
     /** @return list<array<string, mixed>> */

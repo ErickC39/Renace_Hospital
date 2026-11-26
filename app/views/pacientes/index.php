@@ -8,12 +8,31 @@
  */
 
 use App\Core\Auth;
+
+/** "Cédula 1-1203-0458", "DIMEX 1…", "Recién nacido, sin cédula todavía". */
+$documento = static function (array $f): string {
+    return match ($f['tipo_documento'] ?? 'CEDULA') {
+        'RECIEN_NACIDO' => 'Recién nacido, sin cédula todavía',
+        'DIMEX' => 'DIMEX ' . $f['numero_documento'],
+        'PASAPORTE' => 'Pasaporte ' . $f['numero_documento'],
+        default => 'Cédula ' . $f['numero_documento'],
+    };
+};
+/** Un bebé muestra días o meses; los demás, años. */
+$edad = static function (array $f): string {
+    $dias = $f['edad_dias'] ?? null;
+    if ($dias !== null && (int) $f['edad'] < 1) {
+        $dias = (int) $dias;
+        return $dias < 60 ? ($dias === 1 ? '1 día' : "{$dias} días") : intdiv($dias, 30) . ' meses';
+    }
+    return (int) $f['edad'] === 1 ? '1 año' : e($f['edad']) . ' años';
+};
 ?>
 <div class="title">
     <div>
         <h1>Pacientes</h1>
         <?php if ($ficha !== null): ?>
-            <p><strong><?= e($ficha['nombre_completo']) ?></strong> tiene <?= e($ficha['total_controles']) ?> controles registrados<?= $ficha['proxima_revision'] ? ' y su próxima revisión es el ' . e($ficha['proxima_revision']) : '' ?>.</p>
+            <p><strong><?= e($ficha['nombre_completo']) ?></strong> tiene <?= (int) $ficha['total_controles'] === 1 ? '1 control registrado' : e($ficha['total_controles']) . ' controles registrados' ?><?= $ficha['proxima_revision'] ? ' y su próxima revisión es el ' . e($ficha['proxima_revision']) : '' ?>.</p>
         <?php else: ?>
             <p>No se encontró ningún paciente con esa búsqueda.</p>
         <?php endif; ?>
@@ -29,7 +48,7 @@ use App\Core\Auth;
         <?php foreach ($lista as $p):
             $url = '/pacientes?' . http_build_query(array_filter(['q' => $busqueda, 'id' => $p['id_paciente']])); ?>
             <a class="fila-paciente <?= $ficha && (string) $ficha['id_paciente'] === (string) $p['id_paciente'] ? 'on' : '' ?>" href="<?= e($url) ?>">
-                <b class="strong"><?= e($p['nombre_completo']) ?></b><span class="sub"><?= e($p['numero_documento']) ?> · <?= e($p['resumen']) ?></span>
+                <b class="strong"><?= e($p['nombre_completo']) ?></b><span class="sub"><?= e($p['numero_documento']) ?><?= $p['resumen'] ? ' · ' . e($p['resumen']) : '' ?></span>
             </a>
         <?php endforeach; ?>
     </section>
@@ -39,14 +58,18 @@ use App\Core\Auth;
         <section class="card">
             <div class="d-flex justify-content-between gap-3">
                 <div><h2 class="ficha-nombre"><?= e($ficha['nombre_completo']) ?></h2>
-                    <span class="muted">Cédula <?= e($ficha['numero_documento']) ?> · <?= e($ficha['edad']) ?> años · <?= e($ficha['sexo']) ?></span></div>
-                <?= pill($ficha['estado'] === 'ACTIVO' ? 'Activa' : 'Inactiva', $ficha['estado'] === 'ACTIVO' ? 'ok' : 'neu') ?>
+                    <span class="muted"><?= e($documento($ficha)) ?> · <?= $edad($ficha) ?> · <?= e(\App\Controllers\EmpleadoController::SEXOS[$ficha['sexo']] ?? $ficha['sexo']) ?></span>
+                    <?php if ($ficha['madre']): ?>
+                        <span class="sub">Hijo<?= $ficha['sexo'] === 'F' ? 'a' : '' ?> de <a href="/pacientes?id=<?= e($ficha['id_paciente_madre']) ?>"><?= e($ficha['madre']) ?></a></span>
+                    <?php endif; ?></div>
+                <?php $femenino = $ficha['sexo'] === 'F'; ?>
+                <?= pill($ficha['estado'] === 'ACTIVO' ? ($femenino ? 'Activa' : 'Activo') : ($femenino ? 'Inactiva' : 'Inactivo'), $ficha['estado'] === 'ACTIVO' ? 'ok' : 'neu') ?>
             </div>
             <div class="kpis k4 ficha">
                 <div><label>Tipo de sangre</label><b><?= $ficha['tipo_sangre'] ? e($ficha['tipo_sangre']) : '—' ?></b></div>
                 <div><label>Última cita</label><b><?= $ficha['ultima_cita'] ? e($ficha['ultima_cita']) : '—' ?></b></div>
                 <div><label>Próxima revisión</label><b class="lead"><?= $ficha['proxima_revision'] ? e($ficha['proxima_revision']) : '—' ?></b></div>
-                <div><label>Contacto de emergencia</label><b class="contacto"><?= $ficha['contacto_emergencia'] ? e($ficha['contacto_emergencia'] . ' · ' . $ficha['telefono_emergencia']) : '—' ?></b></div>
+                <div><label>Contacto de emergencia</label><b class="contacto"><?= $ficha['contacto_emergencia'] ? e($ficha['contacto_emergencia']) . ($ficha['telefono_emergencia'] ? '<span class="sub">' . e($ficha['telefono_emergencia']) . '</span>' : '') : '—' ?></b></div>
             </div>
         </section>
         <div class="grid g1-1">
