@@ -115,6 +115,12 @@ final class MedicoController extends Controlador
     }
 
     /** POST /medicos/especialidades */
+    /** GET /medicos/especialidades · Las especialidades se editan en una ventana de /medicos; esta dirección solo lleva allí. */
+    public function especialidades(): Response
+    {
+        return Response::redirect('/medicos');
+    }
+
     public function crearEspecialidad(): Response
     {
         return $this->guardarEspecialidad(null);

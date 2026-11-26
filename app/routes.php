@@ -110,6 +110,7 @@ return static function (Router $router): void {
     // Médicos y especialidades: los ve quien ve las citas; los administra quien administra usuarios
     $router->get('/medicos', [MedicoController::class, 'index'], 'cita.ver');
     $router->post('/medicos', [MedicoController::class, 'registrar'], 'usuario.administrar');
+    $router->get('/medicos/especialidades', [MedicoController::class, 'especialidades'], 'cita.ver');
     $router->post('/medicos/especialidades', [MedicoController::class, 'crearEspecialidad'], 'usuario.administrar');
     $router->post('/medicos/especialidades/{id}', [MedicoController::class, 'editarEspecialidad'], 'usuario.administrar');
     $router->post('/medicos/horarios/{id}/quitar', [MedicoController::class, 'quitarHorario'], 'usuario.administrar');

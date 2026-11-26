@@ -100,12 +100,16 @@ $formatoMs = static function (float $ms): string {
             <table class="table" data-paginar>
                 <thead><tr><?php foreach ($columnas as $titulo): ?><th><?= e($titulo) ?></th><?php endforeach; ?><?php if ($marcaAvisos): ?><th></th><?php endif; ?></tr></thead>
                 <tbody>
-                <?php foreach ($filas as $f): $on = $tab === 'pasos' && (string) $f['referencia'] === $ref; ?>
+                <?php foreach ($filas as $f): $on = $tab === 'pasos' && (string) $f['referencia'] === $ref;
+                    // En una modificación, antes y después muestran solo lo que cambió.
+                    $diff = $tab === 'cambios' ? Etiquetas::diferencias((string) $f['valor_anterior'], (string) $f['valor_nuevo']) : null; ?>
                     <tr class="<?= $on ? 'sel' : '' ?>">
                         <?php foreach (array_keys($columnas) as $col): ?>
                             <td class="<?= in_array($col, ['hora', 'referencia'], true) ? 'nowrap' : '' ?>">
                                 <?php if ($col === 'referencia'): ?>
                                     <a href="<?= e($url(['tab' => 'pasos', 'ref' => $f[$col]])) ?>"><?= e($nombresRef[(string) $f[$col]] ?? Etiquetas::referencia((string) $f[$col])) ?></a>
+                                <?php elseif ($diff !== null && in_array($col, ['valor_anterior', 'valor_nuevo'], true)): ?>
+                                    <?= e($diff[$col === 'valor_anterior' ? 0 : 1]) ?>
                                 <?php else: ?>
                                     <?= $celda($col, $f[$col]) ?>
                                 <?php endif; ?>

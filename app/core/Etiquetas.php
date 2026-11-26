@@ -172,11 +172,13 @@ final class Etiquetas
      * "ID_PEDIDO=5; ESTADO=EN_COBRO; " → "Estado: En cobro".
      * Oculta los identificadores internos y cualquier dato de claves.
      */
-    public static function valores(string $texto): string
+    public static function valores(string $texto, ?array $solo = null): string
     {
-        preg_match_all('/(?:^|;\s*)([A-Z][A-Z0-9_]*)=(.*?)(?=;\s*[A-Z][A-Z0-9_]*=|;\s*$|$)/s', $texto, $campos, PREG_SET_ORDER);
         $partes = [];
-        foreach ($campos as [, $columna, $valor]) {
+        foreach (self::campos($texto) as $columna => $valor) {
+            if ($solo !== null && !in_array($columna, $solo, true)) {
+                continue;
+            }
             if ($valor === '' || preg_match('/^ID_|CLAVE|HASH|TOKEN/', $columna) === 1) {
                 continue;
             }
@@ -184,10 +186,57 @@ final class Etiquetas
                 // Montos en colones: precios, costos, totales, pagos y salarios.
                 preg_match('/PRECIO|COSTO|TOTAL|MONTO|SALARIO/', $columna) === 1 && is_numeric(str_replace(',', '.', $valor)) => colones($valor),
                 preg_match('/^[A-Z]{2,}(_[A-Z]+)*$/', $valor) === 1 => self::legible($valor),
-                default => $valor,
+                default => self::fecha($valor),
             };
         }
         return implode(' · ', $partes);
+    }
+
+    /**
+     * Antes y después de una modificación, solo con las columnas que cambiaron.
+     * Si no es una modificación (falta uno de los dos), devuelve todo como antes.
+     *
+     * @return array{0:string, 1:string}
+     */
+    public static function diferencias(string $antes, string $despues): array
+    {
+        if ($antes === '' || $despues === '') {
+            return [self::valores($antes), self::valores($despues)];
+        }
+        $a = self::campos($antes);
+        $d = self::campos($despues);
+        // Las columnas de control cambian en cada modificación; no dicen nada por sí solas.
+        $cambiaron = array_values(array_filter(
+            array_unique(array_merge(array_keys($a), array_keys($d))),
+            static fn(string $c): bool => ($a[$c] ?? '') !== ($d[$c] ?? '') && preg_match('/^(FECHA|USUARIO)_(CREACION|MODIFICACION)$/', $c) !== 1,
+        ));
+        return [self::valores($antes, $cambiaron), self::valores($despues, $cambiaron)];
+    }
+
+    /** @return array<string, string> "COLUMNA=valor; " → ['COLUMNA' => 'valor']. */
+    private static function campos(string $texto): array
+    {
+        preg_match_all('/(?:^|;\s*)([A-Z][A-Z0-9_]*)=(.*?)(?=;\s*[A-Z][A-Z0-9_]*=|;\s*$|$)/s', $texto, $campos, PREG_SET_ORDER);
+        $salida = [];
+        foreach ($campos as [, $columna, $valor]) {
+            $salida[$columna] = $valor;
+        }
+        return $salida;
+    }
+
+    /** "25/11/26 17:31:01,665000" o "25/11/26" → "25/11/2026 17:31:01" o "25/11/2026". Otro texto queda igual. */
+    private static function fecha(string $valor): string
+    {
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{2})(?: (\d{1,2}:\d{2}:\d{2})(?:[.,]\d+)?(?: ?([AP]M))?)?$/', trim($valor), $m) !== 1) {
+            return $valor;
+        }
+        $hora = $m[4] ?? '';
+        if ($hora !== '' && ($m[5] ?? '') !== '') {
+            $hora = (string) date('H:i:s', (int) strtotime($hora . ' ' . $m[5]));
+        }
+        // Año de dos dígitos: hasta el año que viene es 20xx; el resto, 19xx (95 → 1995).
+        $siglo = (int) $m[3] <= (int) date('y') + 1 ? '20' : '19';
+        return "{$m[1]}/{$m[2]}/{$siglo}{$m[3]}" . ($hora !== '' ? ' ' . $hora : '');
     }
 
     /** "PEDIDO 5" → "Pedido 5". Las demás referencias (cédula, usuario) quedan igual. */
