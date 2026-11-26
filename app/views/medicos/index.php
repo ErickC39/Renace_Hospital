@@ -67,7 +67,7 @@ $estadosCita = ['PROGRAMADA' => ['Programada', 'info'], 'EN_ESPERA' => ['En espe
                 <dt>Especialidad</dt><dd><?= e($elegido['especialidad']) ?></dd>
                 <dt>Código del Colegio</dt><dd><?= e($elegido['codigo_colegio']) ?></dd>
                 <dt>Documento</dt><dd><?= e($elegido['numero_documento'] ?: '—') ?></dd>
-                <dt>Citas</dt><dd><?= e($elegido['citas_hoy']) ?> hoy · <?= e($elegido['citas_proximas']) ?> programadas</dd>
+                <dt>Citas</dt><dd><?= e($elegido['citas_hoy']) ?> hoy · <?= e($elegido['citas_proximas']) ?> <?= (int) $elegido['citas_proximas'] === 1 ? 'programada' : 'programadas' ?></dd>
             </dl>
             <?php if ($elegido['estado'] !== 'ACTIVO'): ?>
                 <p class="hint mb-0">Está inactivo porque su ficha de empleado está inactiva: no aparece en Citas ni en Nacimientos.</p>

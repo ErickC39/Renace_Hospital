@@ -121,6 +121,8 @@ final class Etiquetas
 
     /** Tildes de las palabras que los nombres internos escriben sin ellas. */
     private const TILDES = [
+        'auditoria' => 'auditoría',
+        'catalogo' => 'catálogo',
         'aplicacion' => 'aplicación', 'area' => 'área', 'atencion' => 'atención', 'categoria' => 'categoría',
         'clinica' => 'clínica', 'clinico' => 'clínico', 'codigo' => 'código', 'deduccion' => 'deducción',
         'descripcion' => 'descripción', 'dia' => 'día', 'diagnostico' => 'diagnóstico', 'direccion' => 'dirección',
@@ -230,6 +232,7 @@ final class Etiquetas
     public static function tituloRastro(string $titulo): string
     {
         [$proceso, $paso] = explode(': ', $titulo, 2) + [1 => ''];
-        return self::proceso($proceso) . ($paso === '' ? '' : ': ' . $paso);
+        // "Registro del acceso: registrar_login" → "Registro del acceso: Entrada al sistema".
+        return self::proceso($proceso) . ($paso === '' ? '' : ': ' . (in_array($paso, ['inicio', 'fin'], true) ? $paso : (self::PASOS[$paso] ?? $paso)));
     }
 }
