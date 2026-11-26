@@ -422,3 +422,6 @@ a{text-decoration-thickness:1px;text-underline-offset:2px}
 /* Cita ausente: el paciente no llegó. Gris tachado para que no se confunda con una por venir. */
 .bk.aus{background:var(--bg);border:1px dashed var(--b);line-height:22px;color:var(--m);text-decoration:line-through}
 .lg-aus{border:1px dashed var(--b)}
+
+/* Fila que pide atención (visitante fuera de horario). */
+.fila-alerta td{background:color-mix(in srgb,var(--d) 7%,transparent)}

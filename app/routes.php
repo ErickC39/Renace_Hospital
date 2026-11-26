@@ -72,6 +72,7 @@ return static function (Router $router): void {
 
     // Visitantes
     $router->get('/visitas', [VisitaController::class, 'index'], 'visita.ver');
+    $router->get('/visitas/historial', [VisitaController::class, 'historial'], 'visita.ver');
     $router->post('/visitas/entrada', [VisitaController::class, 'entrada'], 'visita.registrar');
     $router->post('/visitas/{id}/salida', [VisitaController::class, 'salida'], 'visita.registrar');
 

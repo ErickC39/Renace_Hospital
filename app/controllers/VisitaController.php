@@ -34,6 +34,18 @@ final class VisitaController extends Controlador
         ]);
     }
 
+    /** GET /visitas/historial · Visitas de cualquier día. */
+    public function historial(): string
+    {
+        $fecha = static fn(string $v): string => preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) === 1 ? $v : '';
+        $filtro = ['desde' => $fecha(consulta('desde')), 'hasta' => $fecha(consulta('hasta'))];
+        return View::render('visitas/historial', [
+            'titulo' => 'Historial de visitas',
+            'visitas' => (new Visita())->historial($filtro['desde'], $filtro['hasta']),
+            'filtro' => $filtro,
+        ]);
+    }
+
     /** POST /visitas/entrada · Si la persona no existe, primero la registra. */
     public function entrada(): Response
     {

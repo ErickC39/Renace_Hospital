@@ -24,22 +24,35 @@ foreach ($dentro as $v) {
     }
 }
 $puedeRegistrar = Auth::can('visita.registrar');
+$ahora = new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica'));
+$hoy = $ahora->format('Y-m-d');
+$fueraDeHora = minutos_del_dia($ahora->format('H:i')) < $inicio || minutos_del_dia($ahora->format('H:i')) >= $fin;
+// Fuera del horario de visitas: entró otro día, o ya pasó de las 20:00.
+$fuera = static fn(array $v): bool => ($v['fecha_entrada'] ?? $hoy) !== $hoy || $fueraDeHora;
+$quedados = array_values(array_filter($dentro, $fuera));
+$entradasHoy = count(array_filter($dentro, static fn(array $v): bool => ($v['fecha_entrada'] ?? $hoy) === $hoy)) + count($salidas);
 ?>
 <div class="title">
     <div>
         <h1>Visitantes</h1>
         <?php if ($masLargo !== null): ?>
-            <p><strong><?= count($dentro) ?> personas</strong> están dentro ahora. <?= e($masLargo['visitante']) ?> lleva más tiempo: <?= e(duracion($masLargo['minutos'])) ?>.</p>
+            <p><strong><?= count($dentro) === 1 ? '1 persona</strong> está' : count($dentro) . ' personas</strong> están' ?> dentro ahora. <?= e($masLargo['visitante']) ?> lleva más tiempo: <?= e(duracion($masLargo['minutos'])) ?>.</p>
         <?php else: ?>
             <p>No hay visitantes dentro en este momento.</p>
         <?php endif; ?>
     </div>
+    <div class="actions"><a class="btn btn-outline" href="/visitas/historial"><i class="bi bi-clock-history" aria-hidden="true"></i>Historial de visitas</a></div>
 </div>
+
+<?php if ($quedados !== []): ?>
+    <div class="notice warn mb-3" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <span><strong><?= count($quedados) === 1 ? '1 visitante sigue' : count($quedados) . ' visitantes siguen' ?> dentro fuera del horario de visitas</strong> (06:00 a 20:00). Confirma si ya salieron y registra su salida.</span></div>
+<?php endif; ?>
 
 <div class="grid <?= $puedeRegistrar ? 'g2-1' : '' ?>">
     <div class="stack">
         <section class="card">
-            <div class="card-h"><h2>Dentro ahora</h2><span><?= count($dentro) + count($salidas) ?> entradas hoy, <?= count($salidas) ?> ya salieron</span></div>
+            <div class="card-h"><h2>Dentro ahora</h2><span><?= $entradasHoy ?> <?= $entradasHoy === 1 ? 'entrada' : 'entradas' ?> hoy, <?= count($salidas) ?> ya <?= count($salidas) === 1 ? 'salió' : 'salieron' ?></span></div>
             <?php if ($dentro === []): ?>
                 <p class="muted mb-0">Cuando alguien entre, aparecerá aquí con su tiempo.</p>
             <?php else: ?>
@@ -48,13 +61,15 @@ $puedeRegistrar = Auth::can('visita.registrar');
                 <thead><tr><th>Visitante</th><th>Motivo y destino</th><th class="num">Entrada</th><th class="num">Tiempo</th><th class="col-112">De 06:00 a 20:00</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($dentro as $v):
-                    $desde = minutos_del_dia((string) $v['hora_entrada']);
-                    $hasta = $desde + (int) $v['minutos']; ?>
-                    <tr>
+                    $otroDia = ($v['fecha_entrada'] ?? $hoy) !== $hoy;
+                    // Si entró otro día, la barra de hoy va completa desde las 06:00.
+                    $desde = $otroDia ? $inicio : minutos_del_dia((string) $v['hora_entrada']);
+                    $hasta = $otroDia ? minutos_del_dia($ahora->format('H:i')) : $desde + (int) $v['minutos']; ?>
+                    <tr class="<?= $fuera($v) ? 'fila-alerta' : '' ?>">
                         <td class="nowrap"><?= e($v['visitante']) ?><span class="sub"><?= e($v['numero_documento']) ?></span></td>
                         <td><?= e($v['motivo_visita']) ?><span class="sub"><?= e($v['area']) ?><?= $v['destino'] ? ', ' . e($v['destino']) : '' ?></span></td>
-                        <td class="num"><?= e($v['hora_entrada']) ?></td>
-                        <td class="num strong"><?= e(duracion($v['minutos'])) ?></td>
+                        <td class="num nowrap"><?= $otroDia ? e(date_create((string) $v['fecha_entrada'])->format('d/m')) . ' ' : '' ?><?= e($v['hora_entrada']) ?></td>
+                        <td class="num strong"><?= e(duracion($v['minutos'])) ?><?= $fuera($v) ? '<span class="sub">' . pill('Fuera de horario', 'bad') . '</span>' : '' ?></td>
                         <td><div class="strip" role="img" aria-label="De <?= e($v['hora_entrada']) ?> hasta ahora"><i style="left:<?= round($pos($desde), 2) ?>%;width:<?= round($pos($hasta) - $pos($desde), 2) ?>%"></i></div></td>
                         <td class="num">
                             <?php if ($puedeRegistrar): ?>
