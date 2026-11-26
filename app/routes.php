@@ -89,6 +89,7 @@ return static function (Router $router): void {
     $router->get('/pacientes', [PacienteController::class, 'index'], 'paciente.ver');
     $router->get('/pacientes/nuevo', [PacienteController::class, 'nuevo'], 'paciente.editar');
     $router->post('/pacientes/nuevo', [PacienteController::class, 'crear'], 'paciente.editar');
+    $router->post('/pacientes/{id}/editar', [PacienteController::class, 'editar'], 'paciente.editar');
 
     // Nacimientos
     $router->get('/nacimientos', [NacimientoController::class, 'index'], 'nacimiento.registrar');

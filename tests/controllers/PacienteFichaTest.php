@@ -80,6 +80,37 @@ final class PacienteFichaTest extends TestCase
         $this->assertStringContainsString('>Activa<', $html);
     }
 
+    public function testEditarLaFichaLlamaAlPaqueteConLosDatos(): void
+    {
+        $db = $this->bd();
+        Auth::login(['id_usuario' => 1, 'nombre_usuario' => 'ana', 'nombre_completo' => 'Ana', 'id_rol' => 1, 'rol' => 'recepcion', 'estado' => 'ACTIVO'], ['paciente.editar']);
+        $_POST = [\App\Core\Csrf::FIELD => \App\Core\Csrf::token(), 'nombre' => 'Ana', 'apellidos' => 'Solano Vega', 'fecha_nacimiento' => '1995-04-12',
+            'sexo' => 'F', 'tipo_sangre' => 'O+', 'contacto_emergencia' => 'Jorge Solano', 'telefono_emergencia' => '88114455', 'estado' => 'INACTIVO'];
+
+        $res = $this->app()->handle('POST', '/pacientes/4/editar');
+
+        $this->assertSame('/pacientes?id=4', $res->headers['Location']);
+        $this->assertSame(['p_id_paciente' => 4, 'p_nombre' => 'Ana', 'p_apellidos' => 'Solano Vega', 'p_fecha_nacimiento' => '1995-04-12', 'p_sexo' => 'F',
+            'p_tipo_sangre' => 'O+', 'p_contacto_emergencia' => 'Jorge Solano', 'p_telefono_emergencia' => '8811-4455', 'p_estado' => 'INACTIVO', 'p_id_usuario' => 1],
+            $db->negocio()[0]['in']);
+        $_POST = [];
+    }
+
+    public function testEditarRechazaNombresConNumerosYTelefonosMalos(): void
+    {
+        $db = $this->bd();
+        Auth::login(['id_usuario' => 1, 'nombre_usuario' => 'ana', 'nombre_completo' => 'Ana', 'id_rol' => 1, 'rol' => 'recepcion', 'estado' => 'ACTIVO'], ['paciente.editar']);
+        $base = ['nombre' => 'Ana', 'apellidos' => 'Solano', 'fecha_nacimiento' => '', 'sexo' => 'F', 'tipo_sangre' => '', 'contacto_emergencia' => '', 'telefono_emergencia' => '', 'estado' => 'ACTIVO'];
+
+        foreach ([['nombre' => 'Ana2'], ['telefono_emergencia' => '123']] as $malo) {
+            $_POST = [\App\Core\Csrf::FIELD => \App\Core\Csrf::token()] + $malo + $base;
+            $this->app()->handle('POST', '/pacientes/4/editar');
+        }
+
+        $this->assertSame([], $db->negocio());
+        $_POST = [];
+    }
+
     /** @param array<string, list<array<string, mixed>>> $filas */
     private function bd(array $filas = []): BdGrabadora
     {

@@ -17,6 +17,42 @@ final class PacienteController extends Controlador
 {
     private const CAMPOS = ['numero_documento', 'nombre', 'apellidos', 'fecha_nacimiento', 'sexo', 'tipo_sangre', 'contacto_emergencia', 'telefono_emergencia'];
 
+    /** POST /pacientes/{id}/editar · Corrige la ficha o activa e inactiva al paciente. El documento no se edita. */
+    public function editar(string $id): Response
+    {
+        $volver = "/pacientes?id={$id}";
+        $datos = [];
+        foreach (['nombre', 'apellidos', 'fecha_nacimiento', 'sexo', 'tipo_sangre', 'contacto_emergencia', 'telefono_emergencia'] as $campo) {
+            $datos[$campo] = entrada($campo);
+        }
+        $datos['estado'] = entrada('estado') === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO';
+        if ($datos['nombre'] === '' || $datos['apellidos'] === '') {
+            return $this->rechazar('Indica el nombre y los apellidos.', $volver);
+        }
+        if (!Formato::esNombre($datos['nombre']) || !Formato::esNombre($datos['apellidos'])
+            || ($datos['contacto_emergencia'] !== '' && !Formato::esNombre($datos['contacto_emergencia']))) {
+            return $this->rechazar('Los nombres solo llevan letras, sin números ni símbolos.', $volver);
+        }
+        if (!isset(EmpleadoController::SEXOS[$datos['sexo']])) {
+            return $this->rechazar('Elige el género del paciente.', $volver);
+        }
+        if ($datos['fecha_nacimiento'] !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $datos['fecha_nacimiento']) !== 1) {
+            return $this->rechazar('La fecha de nacimiento no es válida.', $volver);
+        }
+        if ($datos['telefono_emergencia'] !== '') {
+            $telefono = Formato::telefono($datos['telefono_emergencia']);
+            if ($telefono === null) {
+                return $this->rechazar('El teléfono de emergencia debe tener 8 dígitos, por ejemplo 8888-8888.', $volver);
+            }
+            $datos['telefono_emergencia'] = $telefono;
+        }
+        return $this->ejecutar(
+            static fn() => (new Paciente())->editar((int) $id, $datos, (int) Auth::user()['id_usuario']),
+            $datos['estado'] === 'INACTIVO' ? 'Ficha guardada. El paciente quedó inactivo.' : 'Ficha guardada.',
+            $volver,
+        );
+    }
+
     /** GET /pacientes · ?q= busca; ?id= elige; si no, abre el primero de la lista. */
     public function index(): string
     {

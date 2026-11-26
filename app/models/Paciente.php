@@ -34,7 +34,8 @@ final class Paciente extends Modelo
                      contacto_emergencia, telefono_emergencia, estado, total_controles';
         try {
             return $this->db->select(
-                "SELECT {$columnas}, tipo_documento, edad_dias, id_paciente_madre, madre FROM vw_paciente_ficha WHERE id_paciente = :id_paciente",
+                "SELECT {$columnas}, tipo_documento, edad_dias, id_paciente_madre, madre, nombre, apellidos, fecha_nacimiento
+                   FROM vw_paciente_ficha WHERE id_paciente = :id_paciente",
                 ['id_paciente' => $idPaciente],
             )[0] ?? null;
         } catch (\RuntimeException $e) {
@@ -43,7 +44,18 @@ final class Paciente extends Modelo
             }
         }
         $fila = $this->db->select("SELECT {$columnas} FROM vw_paciente_ficha WHERE id_paciente = :id_paciente", ['id_paciente' => $idPaciente])[0] ?? null;
-        return $fila === null ? null : $fila + ['tipo_documento' => null, 'edad_dias' => null, 'id_paciente_madre' => null, 'madre' => null];
+        return $fila === null ? null : $fila + ['tipo_documento' => null, 'edad_dias' => null, 'id_paciente_madre' => null, 'madre' => null,
+            'nombre' => null, 'apellidos' => null, 'fecha_nacimiento' => null];
+    }
+
+    /** @param array<string, string> $datos nombre, apellidos, fecha_nacimiento, sexo, tipo_sangre, contacto_emergencia, telefono_emergencia, estado */
+    public function editar(int $idPaciente, array $datos, int $idUsuario): void
+    {
+        $in = ['p_id_paciente' => $idPaciente];
+        foreach ($datos as $campo => $valor) {
+            $in["p_{$campo}"] = $valor === '' ? null : $valor;
+        }
+        $this->db->call('pkg_paciente_ficha.sp_paciente_editar', $in + ['p_id_usuario' => $idUsuario]);
     }
 
     /** @return list<array<string, mixed>> */
