@@ -869,6 +869,53 @@ final class ModulosTest extends TestCase
         $this->assertStringContainsString('cuando se instale la actualización de la base de datos', $html);
     }
 
+    /** @return array<string, array{string, string, array<string, string>}> */
+    public static function nombresConNumeros(): array
+    {
+        $paciente = ['tipo_documento' => 'CEDULA', 'numero_documento' => '1-1111-1111', 'nombre' => 'Ana', 'apellidos' => 'Mora Solís',
+            'fecha_nacimiento' => '1990-01-01', 'sexo' => 'F', 'tipo_sangre' => 'O+', 'contacto_emergencia' => 'Luis Mora', 'telefono_emergencia' => '8888-8888'];
+        $empleado = ['nombre' => 'Ana', 'apellidos' => 'Mora Solís', 'sexo' => 'F', 'fecha_nacimiento' => '1990-01-01', 'telefono' => '8888-8888',
+            'correo' => '', 'direccion' => '', 'id_puesto' => '1', 'fecha_ingreso' => '2026-01-01', 'tipo_documento' => 'CEDULA', 'numero_documento' => '1-1111-1111'];
+        $visita = ['numero_documento' => '1-2222-2222', 'tipo_documento' => 'CEDULA', 'nombre' => 'Ana', 'apellidos' => 'Mora Solís',
+            'motivo_visita' => 'Trámite', 'id_area' => '1', 'id_empleado_recibe' => '1'];
+        $bebe = ['id_paciente_madre' => '4', 'id_medico' => '4', 'nombre_bebe' => 'Mateo', 'apellidos_bebe' => 'Solís Mora', 'sexo' => 'M',
+            'fecha_hora' => '2026-11-24T08:00', 'tipo_parto' => 'Vaginal', 'semanas_gestacion' => '39', 'peso_gr' => '3200', 'talla_cm' => '50',
+            'apgar_minuto_1' => '8', 'apgar_minuto_5' => '9', 'observacion' => ''];
+
+        return [
+            'nombre del paciente' => ['/pacientes/nuevo', 'paciente.editar', ['nombre' => 'Ana1'] + $paciente],
+            'apellidos del paciente' => ['/pacientes/nuevo', 'paciente.editar', ['apellidos' => 'Mora 2'] + $paciente],
+            'contacto de emergencia' => ['/pacientes/nuevo', 'paciente.editar', ['contacto_emergencia' => 'Luis3'] + $paciente],
+            'nombre del empleado' => ['/empleados', 'usuario.administrar', ['nombre' => 'Ana1'] + $empleado],
+            'editar empleado' => ['/empleados/3', 'usuario.administrar', ['apellidos' => 'Mora4'] + $empleado],
+            'visitante nuevo' => ['/visitas/entrada', 'visita.registrar', ['nombre' => 'Ana5'] + $visita],
+            'recién nacido' => ['/nacimientos', 'nacimiento.registrar', ['nombre_bebe' => 'Mateo6'] + $bebe],
+        ];
+    }
+
+    /** @param array<string, string> $datos */
+    #[DataProvider('nombresConNumeros')]
+    public function testNingunNombreDePersonaAceptaNumeros(string $ruta, string $permiso, array $datos): void
+    {
+        // Al editar, el empleado 3 existe y no es quien edita.
+        $db = $this->bd(['FROM vw_empleado_lista WHERE id_empleado' => [['id_empleado' => '3', 'nombre_usuario' => 'otro', 'estado' => 'ACTIVO', 'estado_usuario' => 'ACTIVO']]]);
+
+        $this->enviar($ruta, [$permiso], $datos);
+
+        $this->assertStringContainsString('sin números', $_SESSION['flash_error'] ?? '');
+        $this->assertSame([], $db->negocio());
+    }
+
+    public function testElNombreDeUsuarioSiPuedeLlevarNumeros(): void
+    {
+        $db = $this->bd();
+
+        $this->enviar('/usuarios', ['usuario.administrar'], ['id_empleado' => '3', 'nombre_usuario' => 'lmora2', 'id_rol' => '2', 'clave' => 'Temporal#2026x']);
+
+        $this->assertArrayNotHasKey('flash_error', $_SESSION);
+        $this->assertSame('lmora2', $db->negocio()[0]['in']['p_nombre_usuario'] ?? null);
+    }
+
     public function testNacimientosRecientesSalenDelMasNuevoAlMasViejo(): void
     {
         $db = new class implements \App\Core\DatabaseInterface {
