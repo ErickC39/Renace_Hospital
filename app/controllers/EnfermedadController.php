@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Controlador;
 use App\Core\Response;
 use App\Core\View;
@@ -21,9 +22,62 @@ final class EnfermedadController extends Controlador
             'titulo' => 'Enfermedades',
             'filas' => $modelo->tratamientos(consulta('q'), consulta('categoria')),
             'categorias' => $modelo->categorias(),
+            'medicamentos' => Auth::can('catalogo.editar') ? (new Medicamento())->lista() : [],
             'busqueda' => consulta('q'),
             'categoria' => consulta('categoria'),
         ]);
+    }
+
+    /** POST /enfermedades/{id}/editar */
+    public function editar(string $id): Response
+    {
+        $datos = [];
+        foreach (['id_categoria_enfermedad', 'codigo_cie10', 'nombre', 'descripcion', 'tratamiento_general'] as $campo) {
+            $datos[$campo] = entrada($campo);
+        }
+        if ((int) $datos['id_categoria_enfermedad'] <= 0 || $datos['codigo_cie10'] === '' || $datos['nombre'] === '') {
+            return $this->rechazar('Indica la categoría, el código CIE-10 y el nombre.', '/enfermedades');
+        }
+        return $this->ejecutar(
+            static fn() => (new Enfermedad())->editar((int) $id, $datos, (int) Auth::user()['id_usuario']),
+            'Enfermedad guardada.',
+            '/enfermedades',
+        );
+    }
+
+    /** POST /enfermedades/{id}/borrar · Solo si ningún paciente tiene ese diagnóstico. */
+    public function borrar(string $id): Response
+    {
+        return $this->ejecutar(
+            static fn() => (new Enfermedad())->borrar((int) $id, (int) Auth::user()['id_usuario']),
+            'Enfermedad borrada junto con su tratamiento.',
+            '/enfermedades',
+        );
+    }
+
+    /** POST /enfermedades/{id}/tratamientos · Agrega un medicamento al tratamiento. */
+    public function agregarTratamiento(string $id): Response
+    {
+        $horas = (int) entrada('frecuencia_horas');
+        $dias = (int) entrada('duracion_dias');
+        if ((int) entrada('id_medicamento') <= 0 || entrada('dosis') === '' || $horas <= 0 || $dias <= 0) {
+            return $this->rechazar('Indica el medicamento, la dosis, cada cuántas horas y cuántos días.', '/enfermedades');
+        }
+        return $this->ejecutar(
+            static fn() => (new Enfermedad())->agregarTratamiento((int) $id, (int) entrada('id_medicamento'), entrada('dosis'), $horas, $dias, (int) Auth::user()['id_usuario']),
+            'Medicamento agregado al tratamiento.',
+            '/enfermedades',
+        );
+    }
+
+    /** POST /enfermedades/tratamientos/{id}/quitar */
+    public function quitarTratamiento(string $id): Response
+    {
+        return $this->ejecutar(
+            static fn() => (new Enfermedad())->quitarTratamiento((int) $id, (int) Auth::user()['id_usuario']),
+            'Medicamento quitado del tratamiento.',
+            '/enfermedades',
+        );
     }
 
     /** GET /enfermedades/nueva */

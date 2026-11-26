@@ -129,6 +129,10 @@ return static function (Router $router): void {
     $router->get('/enfermedades/categorias', [EnfermedadController::class, 'categorias'], 'catalogo.editar');
     $router->post('/enfermedades/categorias', [EnfermedadController::class, 'crearCategoria'], 'catalogo.editar');
     $router->post('/enfermedades/categorias/{id}', [EnfermedadController::class, 'editarCategoria'], 'catalogo.editar');
+    $router->post('/enfermedades/tratamientos/{id}/quitar', [EnfermedadController::class, 'quitarTratamiento'], 'catalogo.editar');
+    $router->post('/enfermedades/{id}/editar', [EnfermedadController::class, 'editar'], 'catalogo.editar');
+    $router->post('/enfermedades/{id}/borrar', [EnfermedadController::class, 'borrar'], 'catalogo.editar');
+    $router->post('/enfermedades/{id}/tratamientos', [EnfermedadController::class, 'agregarTratamiento'], 'catalogo.editar');
 
     // Empleados
     $router->get('/empleados', [EmpleadoController::class, 'index'], 'usuario.administrar');
