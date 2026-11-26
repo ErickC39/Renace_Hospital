@@ -403,3 +403,18 @@ a{text-decoration-thickness:1px;text-underline-offset:2px}
 .paginas .ir-a{display:inline-flex;align-items:center;gap:6px;margin-left:8px;white-space:nowrap}
 .paginas .ir-a input{width:64px;height:32px;font-size:14px;padding:0 8px}
 .confirmar-clave h2{font-size:20px;margin:0 0 8px}
+
+/* Factura: cabecera con los datos del documento y totales a la derecha. */
+.factura{max-width:820px;margin:0 auto}
+.factura-cabeza{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;border-bottom:1px solid var(--b);padding-bottom:12px;margin-bottom:12px}
+.factura-cabeza h2{font-size:22px;margin:0}
+.factura-cliente{margin-bottom:12px}
+.factura-totales{max-width:360px;margin-left:auto}
+
+/* Impresión: solo el contenido, sin barra, menú ni botones. */
+@media print{
+  .barra,.modulos,.no-imprimir,.flash,.toast{display:none!important}
+  body{background:#fff!important;color:#000!important}
+  .sheet{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;box-shadow:none!important;background:#fff!important}
+  .card{box-shadow:none!important;border:0!important;background:#fff!important}
+}

@@ -1,6 +1,8 @@
 <?php
 /**
  * @var list<array<string, mixed>> $hoy
+ * @var list<array<string, mixed>>|null $historial Pedidos de cualquier día, o null si la base no trae sus fechas.
+ * @var array{desde:string, hasta:string} $filtro
  * @var array<string, mixed>|null $pedido
  * @var list<array<string, mixed>> $lineas
  * @var list<array<string, mixed>> $deducciones
@@ -24,9 +26,14 @@ $pagado = $pedido !== null && $pedido['estado'] === 'PAGADO';
             <p>Pedido <strong><?= e($numeroPedido($pedido['id_pedido'])) ?></strong> de <?= e($pedido['cliente']) ?>: faltan <strong><?= e(colones($pedido['total_pagar'])) ?></strong> por cobrar.</p>
         <?php endif; ?>
     </div>
-    <?php if (Auth::can('venta.cobrar')): ?>
-        <div class="actions"><a class="btn btn-outline" href="/ventas/nuevo"><i class="bi bi-plus-lg"></i>Nuevo pedido</a></div>
-    <?php endif; ?>
+    <div class="actions">
+        <?php if (Auth::can('venta.cobrar')): ?>
+            <a class="btn btn-primary" href="/ventas/nuevo"><i class="bi bi-plus-lg" aria-hidden="true"></i>Nuevo pedido</a>
+        <?php endif; ?>
+        <?php if (Auth::can('usuario.administrar')): ?>
+            <a class="btn btn-outline" href="/ventas/deducciones"><i class="bi bi-percent" aria-hidden="true"></i>Deducciones</a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php if ($pedido !== null): ?>
@@ -39,7 +46,7 @@ $pagado = $pedido !== null && $pedido['estado'] === 'PAGADO';
 </ol>
 <?php endif; ?>
 
-<div class="grid g2-1">
+<div class="grid <?= $pedido !== null ? 'g2-1' : '' ?>">
     <div class="stack">
         <?php if ($pedido !== null): ?>
         <section class="card">
@@ -59,25 +66,45 @@ $pagado = $pedido !== null && $pedido['estado'] === 'PAGADO';
             </table>
         </section>
         <?php endif; ?>
-        <section class="card">
-            <div class="card-h"><h2>Pedidos de hoy</h2><span><?= count($hoy) ?> pedidos</span></div>
-            <?php if ($hoy === []): ?>
-                <p class="muted mb-0">Todavía no hay pedidos hoy.</p>
+        <?php
+        // Sin la actualización de la base, el historial no tiene fechas: se muestran solo los de hoy.
+        $lista = $historial ?? $hoy;
+        $filtrando = $filtro['desde'] !== '' || $filtro['hasta'] !== '';
+        $hoyIso = (new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+        $dia = static fn(?string $iso): string => $iso === null ? '' : ($iso === $hoyIso ? 'Hoy' : (string) date_create($iso)?->format('d/m/Y'));
+        ?>
+        <section class="card" id="pedidos">
+            <div class="card-h"><h2><?= $historial === null ? 'Pedidos de hoy' : 'Pedidos' ?></h2><span><?= count($lista) ?> <?= count($lista) === 1 ? 'pedido' : 'pedidos' ?></span></div>
+            <?php if ($historial !== null): ?>
+            <form class="toolbar" method="get" action="/ventas#pedidos">
+                <label class="form-label mb-0" for="desde">Desde</label>
+                <input class="form-control ancho-190" type="date" id="desde" name="desde" value="<?= e($filtro['desde']) ?>">
+                <label class="form-label mb-0" for="hasta">Hasta</label>
+                <input class="form-control ancho-190" type="date" id="hasta" name="hasta" value="<?= e($filtro['hasta']) ?>">
+                <button class="btn btn-outline btn-sm" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i>Filtrar</button>
+                <?php if ($filtrando): ?><a class="btn btn-outline btn-sm" href="/ventas#pedidos">Ver todos</a><?php endif; ?>
+            </form>
+            <?php endif; ?>
+            <?php if ($lista === []): ?>
+                <p class="muted mb-0"><?= $filtrando ? 'No hay pedidos en esas fechas.' : ($historial === null ? 'Todavía no hay pedidos hoy.' : 'Todavía no hay pedidos.') ?></p>
             <?php else: ?>
+            <div class="table-responsive">
             <table class="table" data-paginar>
-                <thead><tr><th>Pedido</th><th>Cliente</th><th class="num">Hora</th><th class="num">Total</th><th data-filtrar>Estado</th></tr></thead>
+                <thead><tr><th>Pedido</th><th>Cliente</th><th class="num">Fecha</th><th class="num">Total</th><th>Factura</th><th data-filtrar>Estado</th></tr></thead>
                 <tbody>
-                <?php foreach ($hoy as $p): ?>
-                    <tr>
-                        <td><a href="/ventas?pedido=<?= e($p['id_pedido']) ?>"><code><?= e($numeroPedido($p['id_pedido'])) ?></code></a></td>
+                <?php foreach ($lista as $p): ?>
+                    <tr class="<?= $pedido !== null && (int) $p['id_pedido'] === (int) $pedido['id_pedido'] ? 'sel' : '' ?>">
+                        <td><a href="/ventas?<?= e(http_build_query(['pedido' => $p['id_pedido']] + array_filter($filtro))) ?>"><code><?= e($numeroPedido($p['id_pedido'])) ?></code></a></td>
                         <td><?= e($p['cliente']) ?></td>
-                        <td class="num"><?= e($p['hora_pedido']) ?></td>
+                        <td class="num nowrap"><?= e(trim(($historial === null ? 'Hoy' : $dia($p['fecha_pedido'] ?? null)) . ' ' . $p['hora_pedido'])) ?></td>
                         <td class="num"><?= e(colones($p['total_pagar'])) ?></td>
+                        <td><?php if ($p['numero_factura']): ?><a href="/ventas/<?= e($p['id_pedido']) ?>/factura"><code><?= e($p['numero_factura']) ?></code></a><?php endif; ?></td>
                         <td><?= $p['estado'] === 'PAGADO' ? pill('Pagado', 'ok') : pill('En cobro', 'info') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
             <?php endif; ?>
         </section>
     </div>
@@ -106,6 +133,7 @@ $pagado = $pedido !== null && $pedido['estado'] === 'PAGADO';
             <div class="total"><span class="strong">Total a pagar</span><b><?= e(colones($pedido['total_pagar'])) ?></b></div>
             <?php if ($pagado): ?>
                 <div class="notice ok"><i class="bi bi-receipt" aria-hidden="true"></i><span>Pagado. Factura <?= e($pedido['numero_factura']) ?>.</span></div>
+                <a class="btn btn-outline w-100 mt-2" href="/ventas/<?= e($pedido['id_pedido']) ?>/factura"><i class="bi bi-printer" aria-hidden="true"></i>Ver e imprimir la factura</a>
             <?php elseif (Auth::can('venta.cobrar')): ?>
             <form method="post" action="/ventas/<?= e($pedido['id_pedido']) ?>/cobrar">
                 <?= Csrf::field() ?>

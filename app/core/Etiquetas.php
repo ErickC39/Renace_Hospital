@@ -53,6 +53,7 @@ final class Etiquetas
         'sp_cita_iniciar_atencion' => 'Iniciar atención',
         'sp_cita_registrar_llegada' => 'Registrar llegada',
         'sp_cita_registrar_resultado' => 'Registrar resultado de la cita',
+        'sp_deduccion_guardar' => 'Guardar deducción',
         'sp_empleado_editar' => 'Editar empleado',
         'sp_empleado_registrar' => 'Registrar empleado',
         'sp_especialidad_guardar' => 'Guardar especialidad',

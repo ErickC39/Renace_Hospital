@@ -49,6 +49,11 @@ return static function (Router $router): void {
     $router->get('/ventas', [VentaController::class, 'index'], 'venta.ver');
     $router->get('/ventas/nuevo', [VentaController::class, 'nuevo'], 'venta.cobrar');
     $router->post('/ventas/nuevo', [VentaController::class, 'crear'], 'venta.cobrar');
+    // Las deducciones las define administración; el cajero solo las aplica al pedido.
+    $router->get('/ventas/deducciones', [VentaController::class, 'deducciones'], 'usuario.administrar');
+    $router->post('/ventas/deducciones', [VentaController::class, 'crearDeduccion'], 'usuario.administrar');
+    $router->post('/ventas/deducciones/{id}', [VentaController::class, 'editarDeduccion'], 'usuario.administrar');
+    $router->get('/ventas/{id}/factura', [VentaController::class, 'factura'], 'venta.ver');
     $router->post('/ventas/{id}/cobrar', [VentaController::class, 'cobrar'], 'venta.cobrar');
 
     // Inventario

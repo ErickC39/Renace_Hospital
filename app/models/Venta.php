@@ -21,6 +21,45 @@ final class Venta extends Modelo
         );
     }
 
+    /**
+     * Pedidos de cualquier día entre dos fechas opcionales (aaaa-mm-dd), del más nuevo al más viejo.
+     * Devuelve null si la base todavía no trae la fecha del pedido (ORA-00904), para mostrar solo los de hoy.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    public function historial(string $desde, string $hasta): ?array
+    {
+        try {
+            return $this->db->select(
+                'SELECT id_pedido, cliente, numero_documento, empleado, estado, fecha_pedido, hora_pedido,
+                        total_pagar, numero_factura, metodo_pago
+                   FROM vw_venta_pedido
+                  WHERE (:desde IS NULL OR fecha_pedido >= :desde)
+                    AND (:hasta IS NULL OR fecha_pedido <= :hasta)
+                  ORDER BY id_pedido DESC',
+                ['desde' => $desde === '' ? null : $desde, 'hasta' => $hasta === '' ? null : $hasta],
+            );
+        } catch (\RuntimeException $e) {
+            if ($e->getCode() !== 904) {
+                throw $e;
+            }
+            return null;
+        }
+    }
+
+    /** @return array<string, mixed>|null El pedido con su pago y factura, para imprimir la factura. */
+    public function factura(int $idPedido): ?array
+    {
+        return $this->db->select(
+            'SELECT id_pedido, cliente, numero_documento, empleado, estado, fecha_pedido, hora_pedido,
+                    subtotal, total_deducciones, total_pagar, numero_factura, fecha_factura,
+                    metodo_pago, monto_pagado, referencia_pago
+               FROM vw_venta_pedido
+              WHERE id_pedido = :id_pedido',
+            ['id_pedido' => $idPedido],
+        )[0] ?? null;
+    }
+
     /** @return array<string, mixed>|null */
     public function pedido(int $idPedido): ?array
     {
@@ -61,10 +100,33 @@ final class Venta extends Modelo
         return $this->db->select('SELECT id_deduccion, nombre, tipo_valor, valor FROM vw_venta_deduccion ORDER BY nombre');
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * Productos a la venta. requiere_receta es 'S' para los medicamentos con receta; si la base
+     * todavía no trae esa columna (ORA-00904), todos llegan con 'N'.
+     *
+     * @return list<array<string, mixed>>
+     */
     public function productos(): array
     {
-        return $this->db->select('SELECT id_producto, codigo, nombre, precio_venta, existencias FROM vw_venta_producto ORDER BY nombre');
+        try {
+            return $this->db->select('SELECT id_producto, codigo, nombre, precio_venta, existencias, requiere_receta FROM vw_venta_producto ORDER BY nombre');
+        } catch (\RuntimeException $e) {
+            if ($e->getCode() !== 904) {
+                throw $e;
+            }
+            $filas = $this->db->select('SELECT id_producto, codigo, nombre, precio_venta, existencias FROM vw_venta_producto ORDER BY nombre');
+            return array_map(static fn(array $p): array => $p + ['requiere_receta' => 'N'], $filas);
+        }
+    }
+
+    /** Crea la deducción si $id es null; si no, la edita. */
+    public function guardarDeduccion(?int $id, string $nombre, string $tipo, string $valor, int $idUsuario): void
+    {
+        $this->db->call(
+            'pkg_deduccion.sp_deduccion_guardar',
+            ['p_id_deduccion' => $id, 'p_nombre' => $nombre, 'p_tipo_valor' => $tipo, 'p_valor' => $valor, 'p_id_usuario' => $idUsuario],
+            ['p_id_guardada'],
+        );
     }
 
     /**
