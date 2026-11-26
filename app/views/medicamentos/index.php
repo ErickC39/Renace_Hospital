@@ -38,7 +38,7 @@ if (count($horas) >= 2) {
         </form>
         <div class="table-responsive">
         <table class="table" data-paginar data-buscar="no">
-            <thead><tr><th>Principio activo</th><th>Presentación</th><th data-filtrar>Vía</th><th data-filtrar>Receta</th><th class="num">Existencias</th></tr></thead>
+            <thead><tr><th>Principio activo</th><th>Presentación</th><th>Vía</th><th data-filtrar>Receta</th><th class="num">Existencias</th></tr></thead>
             <tbody>
             <?php foreach ($lista as $m):
                 $on = $elegido && (string) $elegido['id_medicamento'] === (string) $m['id_medicamento'];

@@ -85,7 +85,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
 
 <div class="grid g3">
     <?php if (Auth::can('cita.agendar')): ?>
-    <section class="card">
+    <section class="card orden-movil-ultimo">
         <h2>Agendar cita</h2>
         <?php $confirmando = $horaLibre && $persona !== null; ?>
         <form method="get" action="/citas">
@@ -248,7 +248,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
         <?php else: ?>
         <div class="table-responsive">
         <table class="table" data-paginar>
-            <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Médico</th><th>Consultorio</th><th>Tipo</th><th data-filtrar>Estado</th><?php if ($gestiona): ?><th><span class="visually-hidden">Acciones</span></th><?php endif; ?></tr></thead>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Médico</th><th class="col-opcional">Consultorio</th><th class="col-opcional">Tipo</th><th data-filtrar>Estado</th><?php if ($gestiona): ?><th><span class="visually-hidden">Acciones</span></th><?php endif; ?></tr></thead>
             <tbody>
             <?php foreach ($todas as $t): [$texto, $tipo] = $estados[$t['estado']] ?? [(string) $t['estado'], 'neu']; ?>
                 <tr>
@@ -256,8 +256,8 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
                     <td class="nowrap"><code><?= e($t['hora']) ?></code></td>
                     <td><?= e($t['paciente']) ?><span class="sub"><?= e($t['documento']) ?></span></td>
                     <td><?= e($t['medico']) ?><span class="sub"><?= e($t['especialidad']) ?></span></td>
-                    <td><?= e($t['consultorio'] ?? '') ?></td>
-                    <td><?= e(Etiquetas::legible((string) $t['tipo_cita'])) ?></td>
+                    <td class="col-opcional"><?= e($t['consultorio'] ?? '') ?></td>
+                    <td class="col-opcional"><?= e(Etiquetas::legible((string) $t['tipo_cita'])) ?></td>
                     <td><?= pill($texto, $tipo) ?></td>
                     <?php if ($gestiona): ?>
                     <td class="num nowrap">

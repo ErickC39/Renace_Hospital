@@ -59,7 +59,7 @@ $camposHabitacion = static function (?array $h, string $px) use ($tipos, $areas)
                 <td><?= e($h['tipo']) ?></td>
                 <td><?= pill($estados[$h['estado']] ?? (string) $h['estado'], $pillEstado[$h['estado']] ?? 'neu') ?></td>
                 <td><?php if ($h['paciente']): ?><?= e($h['paciente']) ?><span class="sub"><?= e($h['motivo']) ?></span><?php else: ?><span class="muted">—</span><?php endif; ?></td>
-                <td class="nowrap"><?php if ($h['fecha_ingreso']): ?><?= e($h['fecha_ingreso']) ?><span class="sub"><?= e($dias($h['dias'])) ?> · <?= e($h['responsable']) ?></span><?php else: ?><span class="muted">—</span><?php endif; ?></td>
+                <td class="nowrap"><?php if ($h['fecha_ingreso']): ?><?= e(fecha_cr($h['fecha_ingreso'])) ?><span class="sub"><?= e($dias($h['dias'])) ?> · <?= e($h['responsable']) ?></span><?php else: ?><span class="muted">—</span><?php endif; ?></td>
                 <?php if ($asigna || $administra): ?>
                 <td class="num nowrap">
                     <?php if ($asigna && $h['estado'] === 'DISPONIBLE'): ?>
@@ -104,8 +104,8 @@ $camposHabitacion = static function (?array $h, string $px) use ($tipos, $areas)
             <tr>
                 <td><?= e($e['numero']) ?></td>
                 <td><?= e($e['paciente']) ?><span class="sub"><?= e($e['numero_documento']) ?></span></td>
-                <td class="nowrap"><?= e($e['fecha_ingreso']) ?><span class="sub"><?= e($e['responsable_ingreso']) ?></span></td>
-                <td class="nowrap"><?php if ($e['fecha_salida']): ?><?= e($e['fecha_salida']) ?><span class="sub"><?= e($e['responsable_salida']) ?></span><?php else: ?><?= pill('Sigue ingresado', 'info') ?><?php endif; ?></td>
+                <td class="nowrap"><?= e(fecha_cr($e['fecha_ingreso'])) ?><span class="sub"><?= e($e['responsable_ingreso']) ?></span></td>
+                <td class="nowrap"><?php if ($e['fecha_salida']): ?><?= e(fecha_cr($e['fecha_salida'])) ?><span class="sub"><?= e($e['responsable_salida']) ?></span><?php else: ?><?= pill('Sigue ingresado', 'info') ?><?php endif; ?></td>
                 <td><?= e($e['motivo']) ?><?php if ($e['observacion_salida']): ?><span class="sub">Salida: <?= e($e['observacion_salida']) ?></span><?php endif; ?></td>
             </tr>
         <?php endforeach; ?>

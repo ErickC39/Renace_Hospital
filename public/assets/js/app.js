@@ -311,16 +311,17 @@
     if (reloj) {
         const formato = new Intl.DateTimeFormat('es-CR', {
             timeZone: 'America/Costa_Rica', weekday: 'long', day: 'numeric', month: 'long',
-            hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+            hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
         });
+        // Sin segundos: un número que cambia cada segundo distrae y no le sirve a nadie.
         const pintarHora = function () {
             const f = {};
             formato.formatToParts(new Date()).forEach(function (parte) { f[parte.type] = parte.value; });
             reloj.textContent = f.weekday.charAt(0).toUpperCase() + f.weekday.slice(1) + ' ' + f.day + ' de ' + f.month
-                + ', ' + f.hour + ':' + f.minute + ':' + f.second;
+                + ', ' + f.hour + ':' + f.minute;
         };
         pintarHora();
-        setInterval(pintarHora, 1000);
+        setInterval(pintarHora, 15000);
     }
 
     // Nuevo pedido: una fila por producto, tantas como hagan falta.

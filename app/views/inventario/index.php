@@ -86,17 +86,17 @@ $camposProducto = static function (?array $p, string $px) use ($categorias): str
         </form>
         <div class="table-responsive">
         <table class="table" data-paginar data-buscar="no">
-            <thead><tr><th>Producto</th><th data-filtrar>Uso</th><th class="num">Existencias</th><th class="col-120">Frente al mínimo</th><th class="num">Costo</th><th class="num">Precio venta</th><?= $puedeAjustar ? '<th></th>' : '' ?></tr></thead>
+            <thead><tr><th>Producto</th><th data-filtrar class="col-opcional">Uso</th><th class="num">Existencias</th><th class="col-120 col-opcional">Frente al mínimo</th><th class="num col-opcional">Costo</th><th class="num">Precio venta</th><?= $puedeAjustar ? '<th></th>' : '' ?></tr></thead>
             <tbody>
             <?php foreach ($productos as $p):
                 $bajo = (int) $p['existencias'] < (int) $p['stock_minimo'];
                 $pct = min(100, (int) $p['existencias'] / max(1, (int) $p['stock_minimo'] * 2) * 100); ?>
                 <tr>
                     <td><?= e($p['nombre']) ?><span class="sub"><code><?= e($p['codigo']) ?></code> · <?= e($p['categoria']) ?></span></td>
-                    <td class="nowrap"><?= e($p['uso']) ?></td>
+                    <td class="nowrap col-opcional"><?= e($p['uso']) ?></td>
                     <td class="num"><b class="<?= $bajo ? 'bajo' : 'normal' ?>"><?= e($p['existencias']) ?></b><span class="muted"> / <?= e($p['stock_minimo']) ?></span></td>
-                    <td><div class="meter"><i class="<?= $bajo ? 'bad' : '' ?>" style="width:<?= round($pct) ?>%"></i></div></td>
-                    <td class="num"><?= e(colones($p['costo'])) ?></td>
+                    <td class="col-opcional"><div class="meter"><i class="<?= $bajo ? 'bad' : '' ?>" style="width:<?= round($pct) ?>%"></i></div></td>
+                    <td class="num col-opcional"><?= e(colones($p['costo'])) ?></td>
                     <td class="num"><?= $p['precio_venta'] !== null && $p['precio_venta'] !== '' ? e(colones($p['precio_venta'])) : '<span class="muted">—</span>' ?></td>
                     <?php if ($puedeAjustar): ?>
                         <td class="num"><button type="button" class="btn btn-outline btn-sm" data-abrir="producto-<?= e($p['id_producto']) ?>" aria-label="Editar <?= e($p['nombre']) ?>"><i class="bi bi-pencil" aria-hidden="true"></i></button></td>

@@ -137,7 +137,7 @@ $estadosCita = ['PROGRAMADA' => ['Programada', 'info'], 'EN_ESPERA' => ['En espe
                 <tbody>
                 <?php foreach ($citas as $c): [$texto, $tipo] = $estadosCita[$c['estado']] ?? [Etiquetas::legible((string) $c['estado']), 'neu']; ?>
                     <tr>
-                        <td class="nowrap"><?= e($c['fecha']) ?> <code><?= e($c['hora']) ?></code></td>
+                        <td class="nowrap"><?= e(fecha_cr($c['fecha'])) ?> <code><?= e($c['hora']) ?></code></td>
                         <td><?= e($c['paciente']) ?></td>
                         <td><?= e(Etiquetas::legible((string) $c['tipo_cita'])) ?></td>
                         <td><?= pill($texto, $tipo) ?></td>

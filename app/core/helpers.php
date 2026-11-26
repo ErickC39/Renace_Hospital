@@ -24,6 +24,18 @@ if (!function_exists('csv_seguro')) {
     }
 }
 
+if (!function_exists('fecha_cr')) {
+    /** "2026-11-24" → "24/11/2026"; "2026-11-24 21:02" → "24/11/2026 21:02". Otro texto queda igual. */
+    function fecha_cr(?string $valor): string
+    {
+        $valor = trim((string) $valor);
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?/', $valor, $m) !== 1) {
+            return $valor;
+        }
+        return "{$m[3]}/{$m[2]}/{$m[1]}" . (isset($m[4]) ? ' ' . $m[4] : '');
+    }
+}
+
 if (!function_exists('fecha_larga')) {
     /** Fecha y hora actuales de Costa Rica en español: "Miércoles 4 de noviembre, 14:32". */
     function fecha_larga(): string

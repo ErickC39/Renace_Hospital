@@ -425,3 +425,9 @@ a{text-decoration-thickness:1px;text-underline-offset:2px}
 
 /* Fila que pide atención (visitante fuera de horario). */
 .fila-alerta td{background:color-mix(in srgb,var(--d) 7%,transparent)}
+
+/* Teléfono: se ocultan las columnas secundarias de las tablas anchas y lo urgente va primero. */
+@media (max-width: 640px) {
+  .col-opcional{display:none}
+  .orden-movil-ultimo{order:3}
+}
