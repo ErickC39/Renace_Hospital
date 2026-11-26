@@ -418,3 +418,7 @@ a{text-decoration-thickness:1px;text-underline-offset:2px}
   .sheet{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;box-shadow:none!important;background:#fff!important}
   .card{box-shadow:none!important;border:0!important;background:#fff!important}
 }
+
+/* Cita ausente: el paciente no llegó. Gris tachado para que no se confunda con una por venir. */
+.bk.aus{background:var(--bg);border:1px dashed var(--b);line-height:22px;color:var(--m);text-decoration:line-through}
+.lg-aus{border:1px dashed var(--b)}

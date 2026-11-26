@@ -82,7 +82,7 @@ final class Resumen
             return null;
         }
         $porVenir = array_filter($filas, static fn(array $c): bool => $c['estado'] === 'PROGRAMADA');
-        $activas = array_filter($filas, static fn(array $c): bool => $c['estado'] !== 'ATENDIDA');
+        $activas = array_filter($filas, static fn(array $c): bool => !in_array($c['estado'], ['ATENDIDA', 'AUSENTE'], true));
         return ['por_venir' => count($porVenir), 'total' => count($filas), 'activas' => array_values($activas)];
     }
 

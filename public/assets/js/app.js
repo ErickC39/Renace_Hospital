@@ -42,7 +42,8 @@
     // Departamentos de la barra: cada botón abre su lista de módulos. Uno abierto a la vez; se cierran
     // al tocar fuera o con Escape. Con el teclado: flecha abajo abre y entra a la lista, y las flechas
     // recorren sus opciones.
-    const botonesGrupo = Array.from(document.querySelectorAll('[data-grupo]'));
+    // Solo los botones de la barra: las opciones de un <select data-filtra> también usan data-grupo.
+    const botonesGrupo = Array.from(document.querySelectorAll('button.grupo-boton[data-grupo]'));
     const panelDe = function (boton) { return document.getElementById(boton.getAttribute('aria-controls')); };
     const abrirGrupo = function (boton, abierto) {
         panelDe(boton).hidden = !abierto;

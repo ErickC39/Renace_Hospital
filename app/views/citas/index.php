@@ -37,7 +37,7 @@ $pos = static fn(int $m): float => round(($m - $desde) / $rango * 100, 3);
 $horas = range((int) ceil($desde / 60), (int) floor($hasta / 60));
 $ahora = (new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica')))->format('H:i');
 $ahoraMin = minutos_del_dia($ahora);
-$clases = ['ATENDIDA' => 'done', 'EN_ATENCION' => 'act', 'EN_ESPERA' => 'wait', 'PROGRAMADA' => 'prog'];
+$clases = ['ATENDIDA' => 'done', 'EN_ATENCION' => 'act', 'EN_ESPERA' => 'wait', 'PROGRAMADA' => 'prog', 'AUSENTE' => 'aus'];
 $masEspera = $espera[0] ?? null;
 $demora = array_values(array_filter($espera, static fn(array $e): bool => $e['cita_previa_demora'] === 'S'));
 
@@ -57,7 +57,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
     <div class="card-h">
         <h2>Agenda de hoy</h2>
         <div class="legend">
-            <span><i class="lg-done"></i>Atendida</span><span><i class="lg-act"></i>En atención</span><span><i class="lg-wait"></i>En espera</span><span><i class="lg-prog"></i>Programada</span><span><i class="lg-prio"></i>Prioridad de empleado</span>
+            <span><i class="lg-done"></i>Atendida</span><span><i class="lg-act"></i>En atención</span><span><i class="lg-wait"></i>En espera</span><span><i class="lg-prog"></i>Programada</span><span><i class="lg-aus"></i>Ausente</span><span><i class="lg-prio"></i>Prioridad de empleado</span>
         </div>
     </div>
     <div class="table-responsive">
@@ -71,7 +71,8 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
                     <?php foreach ($horas as $h): ?><i class="tick" style="left:<?= $pos($h * 60) ?>%"></i><?php endforeach; ?>
                     <?php if ($ahoraMin >= $desde && $ahoraMin <= $hasta): ?><i class="nowline" style="left:<?= $pos($ahoraMin) ?>%"></i><?php endif; ?>
                     <?php foreach ($m['citas'] as $c):
-                        $clase = $c['es_prioritaria'] === 'S' ? 'prio' : ($clases[$c['estado']] ?? 'prog');
+                        // Una ausente se ve como ausente aunque haya sido de prioridad.
+                        $clase = $c['estado'] !== 'AUSENTE' && $c['es_prioritaria'] === 'S' ? 'prio' : ($clases[$c['estado']] ?? 'prog');
                         $ancho = (int) $c['duracion_minutos'] / $rango * 100; ?>
                         <span class="bk <?= $clase ?>" style="left:calc(<?= $pos(minutos_del_dia((string) $c['hora_programada'])) ?>% + 1px);width:calc(<?= round($ancho, 3) ?>% - 2px)" title="<?= e($c['hora_programada'] . ' · ' . $c['apellido_paciente']) ?>"><?= e($c['apellido_paciente']) ?></span>
                     <?php endforeach; ?>
@@ -226,7 +227,9 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
         <p class="muted mb-0">La lista completa estará disponible cuando se instale la actualización de la base de datos.</p>
     <?php else:
         $estados = ['PROGRAMADA' => ['Programada', 'info'], 'EN_ESPERA' => ['En espera', 'warn'], 'EN_ATENCION' => ['En atención', 'info'],
-            'ATENDIDA' => ['Atendida', 'neu'], 'CANCELADA' => ['Cancelada', 'bad'], 'MOVIDA' => ['Movida', 'warn']];
+            'ATENDIDA' => ['Atendida', 'neu'], 'CANCELADA' => ['Cancelada', 'bad'], 'MOVIDA' => ['Movida', 'warn'], 'AUSENTE' => ['Ausente', 'bad']];
+        $gestiona = Auth::can('cita.agendar');
+        $programadas = $gestiona ? array_filter($todas, static fn(array $t): bool => $t['estado'] === 'PROGRAMADA') : [];
         $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
         $dia = static fn(string $iso): string => $iso === $hoy ? 'Hoy' : (string) date_create($iso)?->format('d/m/Y'); ?>
         <form class="toolbar" method="get" action="/citas#todas">
@@ -245,7 +248,7 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
         <?php else: ?>
         <div class="table-responsive">
         <table class="table" data-paginar>
-            <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Médico</th><th>Consultorio</th><th>Tipo</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Médico</th><th>Consultorio</th><th>Tipo</th><th data-filtrar>Estado</th><?php if ($gestiona): ?><th><span class="visually-hidden">Acciones</span></th><?php endif; ?></tr></thead>
             <tbody>
             <?php foreach ($todas as $t): [$texto, $tipo] = $estados[$t['estado']] ?? [(string) $t['estado'], 'neu']; ?>
                 <tr>
@@ -256,11 +259,57 @@ $urlHora = static fn(string $h): string => '/citas?' . http_build_query(['docume
                     <td><?= e($t['consultorio'] ?? '') ?></td>
                     <td><?= e(Etiquetas::legible((string) $t['tipo_cita'])) ?></td>
                     <td><?= pill($texto, $tipo) ?></td>
+                    <?php if ($gestiona): ?>
+                    <td class="num nowrap">
+                        <?php if ($t['estado'] === 'PROGRAMADA'): ?>
+                            <button type="button" class="btn btn-outline btn-sm" data-abrir="reprogramar-<?= e($t['id_cita']) ?>" aria-label="Reprogramar la cita de <?= e($t['paciente']) ?>"><i class="bi bi-calendar2-week" aria-hidden="true"></i></button>
+                            <button type="button" class="btn btn-outline btn-sm" data-abrir="cancelar-<?= e($t['id_cita']) ?>" aria-label="Cancelar la cita de <?= e($t['paciente']) ?>"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                        <?php endif; ?>
+                    </td>
+                    <?php endif; ?>
                 </tr>
             <?php endforeach; ?>
             </tbody>
         </table>
         </div>
+        <p class="hint mb-0">Una cita pasa a <strong>Ausente</strong> si el paciente no llegó 60 minutos después de su hora. El tipo es <strong>Primera vez</strong> hasta que el paciente tiene una cita atendida; las siguientes son <strong>Revisión</strong>.</p>
         <?php endif; ?>
+
+        <?php foreach ($programadas as $t): $idCita = (int) $t['id_cita']; $resumen = $dia((string) $t['fecha']) . ' a las ' . $t['hora'] . ' con ' . $t['medico']; ?>
+        <dialog class="ficha ficha-chica" id="reprogramar-<?= $idCita ?>" aria-labelledby="reprogramar-<?= $idCita ?>-titulo">
+            <form class="ficha-editar" method="post" action="/citas/<?= $idCita ?>/reprogramar">
+                <?= Csrf::field() ?>
+                <div class="ficha-cabeza">
+                    <div><h2 id="reprogramar-<?= $idCita ?>-titulo">Reprogramar cita</h2><span class="muted"><?= e($t['paciente']) ?> · hoy está para <?= e($resumen) ?></span></div>
+                    <button type="button" class="iconbtn" data-cerrar aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="fields f2">
+                    <div class="field"><label class="form-label" for="r<?= $idCita ?>-fecha">Fecha nueva</label><input class="form-control" id="r<?= $idCita ?>-fecha" name="fecha" type="date" min="<?= e($hoy) ?>" required></div>
+                    <div class="field"><label class="form-label" for="r<?= $idCita ?>-hora">Hora nueva</label><input class="form-control" id="r<?= $idCita ?>-hora" name="hora" type="time" step="1800" required></div>
+                </div>
+                <p class="hint">Debe ser un espacio libre en el horario del mismo médico. Si no lo es, el sistema avisa y no cambia nada.</p>
+                <div class="ficha-pie">
+                    <button type="button" class="btn btn-outline" data-cerrar>Volver</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2" aria-hidden="true"></i>Reprogramar</button>
+                </div>
+            </form>
+        </dialog>
+        <dialog class="ficha ficha-chica" id="cancelar-<?= $idCita ?>" aria-labelledby="cancelar-<?= $idCita ?>-titulo">
+            <form class="ficha-editar" method="post" action="/citas/<?= $idCita ?>/cancelar">
+                <?= Csrf::field() ?>
+                <div class="ficha-cabeza">
+                    <div><h2 id="cancelar-<?= $idCita ?>-titulo">Cancelar cita</h2><span class="muted"><?= e($t['paciente']) ?> · <?= e($resumen) ?></span></div>
+                    <button type="button" class="iconbtn" data-cerrar aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="field"><label class="form-label" for="c<?= $idCita ?>-motivo">Motivo</label>
+                    <input class="form-control" id="c<?= $idCita ?>-motivo" name="motivo" required maxlength="300" placeholder="Por ejemplo, el paciente llamó para cancelar"></div>
+                <p class="hint">El espacio queda libre para otro paciente y el motivo se guarda en el historial.</p>
+                <div class="ficha-pie">
+                    <button type="button" class="btn btn-outline" data-cerrar>Volver</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-x-lg" aria-hidden="true"></i>Cancelar la cita</button>
+                </div>
+            </form>
+        </dialog>
+        <?php endforeach; ?>
     <?php endif; ?>
 </section>

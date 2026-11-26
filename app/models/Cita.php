@@ -106,6 +106,17 @@ final class Cita extends Modelo
         )['p_id_cita'];
     }
 
+    public function cancelar(int $idCita, string $motivo, int $idUsuario): void
+    {
+        $this->db->call('pkg_cita_estado.sp_cita_cancelar', ['p_id_cita' => $idCita, 'p_motivo' => $motivo, 'p_id_usuario' => $idUsuario]);
+    }
+
+    /** $fechaHora: "aaaa-mm-dd hh:mm". La base revisa que sea un espacio libre del mismo médico. */
+    public function reprogramar(int $idCita, string $fechaHora, int $idUsuario): void
+    {
+        $this->db->call('pkg_cita_estado.sp_cita_reprogramar', ['p_id_cita' => $idCita, 'p_fecha_hora' => $fechaHora, 'p_id_usuario' => $idUsuario]);
+    }
+
     public function registrarLlegada(int $idCita): void
     {
         $this->db->call('pkg_cita.sp_cita_registrar_llegada', ['p_id_cita' => $idCita]);

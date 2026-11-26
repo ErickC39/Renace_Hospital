@@ -72,6 +72,35 @@ final class CitaController extends Controlador
         );
     }
 
+    /** POST /citas/{id}/cancelar */
+    public function cancelar(string $id): Response
+    {
+        $motivo = entrada('motivo');
+        if ($motivo === '' || mb_strlen($motivo) > 300) {
+            return $this->rechazar('Indica el motivo de la cancelación (hasta 300 caracteres).', '/citas#todas');
+        }
+        return $this->ejecutar(
+            static fn() => (new Cita())->cancelar((int) $id, $motivo, (int) Auth::user()['id_usuario']),
+            'Cita cancelada. El motivo quedó en el historial del paciente.',
+            '/citas#todas',
+        );
+    }
+
+    /** POST /citas/{id}/reprogramar */
+    public function reprogramar(string $id): Response
+    {
+        $fecha = entrada('fecha');
+        $hora = entrada('hora');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) !== 1 || preg_match('/^\d{2}:\d{2}$/', $hora) !== 1) {
+            return $this->rechazar('Indica la fecha y la hora nuevas de la cita.', '/citas#todas');
+        }
+        return $this->ejecutar(
+            static fn() => (new Cita())->reprogramar((int) $id, "{$fecha} {$hora}", (int) Auth::user()['id_usuario']),
+            'Cita reprogramada para el ' . date_create($fecha)->format('d/m/Y') . " a las {$hora}.",
+            '/citas#todas',
+        );
+    }
+
     /** POST /citas/{id}/llegada */
     public function llegada(string $id): Response
     {

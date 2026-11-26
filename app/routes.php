@@ -77,6 +77,8 @@ return static function (Router $router): void {
     $router->get('/citas', [CitaController::class, 'index'], 'cita.ver');
     $router->post('/citas/agendar', [CitaController::class, 'agendar'], 'cita.agendar');
     $router->post('/citas/{id}/llegada', [CitaController::class, 'llegada'], 'cita.agendar');
+    $router->post('/citas/{id}/cancelar', [CitaController::class, 'cancelar'], 'cita.agendar');
+    $router->post('/citas/{id}/reprogramar', [CitaController::class, 'reprogramar'], 'cita.agendar');
     $router->post('/citas/{id}/iniciar', [CitaController::class, 'iniciar'], 'cita.atender');
     $router->post('/citas/{id}/resultado', [CitaController::class, 'resultado'], 'cita.atender');
 
