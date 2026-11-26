@@ -26,6 +26,8 @@ final class PrioridadController extends Controlador
             'movidas' => $reciente ? $modelo->citasMovidas((int) $reciente['id_cita']) : [],
             'nueva' => $reciente === null || consulta('nueva') === '1',
             'medicos' => (new Cita())->medicos(),
+            'historial' => $modelo->historial(),
+            'empleados' => $modelo->empleados(),
         ]);
     }
 

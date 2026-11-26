@@ -4,6 +4,8 @@
  * @var list<array<string, mixed>> $movidas
  * @var bool $nueva
  * @var list<array<string, mixed>> $medicos
+ * @var list<array<string, mixed>>|null $historial Todas las prioridades, o null si la base no trae el historial.
+ * @var list<array<string, mixed>> $empleados
  */
 
 use App\Core\Auth;
@@ -88,6 +90,36 @@ $fila = static function (string $t, string $s, array $bloques) use ($hIni, $hFin
             <?php endif; ?>
         </section>
         <?php endif; ?>
+        <?php if ($historial !== null):
+            $hoyIso = (new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+            $dia = static fn(string $iso): string => $iso === $hoyIso ? 'Hoy' : (string) date_create($iso)?->format('d/m/Y');
+            $estadosCita = ['PROGRAMADA' => ['Programada', 'info'], 'EN_ESPERA' => ['En espera', 'warn'], 'EN_ATENCION' => ['En atención', 'info'],
+                'ATENDIDA' => ['Atendida', 'ok'], 'CANCELADA' => ['Cancelada', 'bad'], 'AUSENTE' => ['Ausente', 'bad']]; ?>
+        <section class="card">
+            <div class="card-h"><h2>Prioridades aplicadas</h2><span><?= count($historial) ?> en total</span></div>
+            <?php if ($historial === []): ?>
+                <p class="muted mb-0">Todavía no se ha aplicado ninguna prioridad.</p>
+            <?php else: ?>
+            <div class="table-responsive">
+            <table class="table" data-paginar>
+                <thead><tr><th>Aplicada</th><th>Empleado</th><th>Médico y motivo</th><th>Cita</th><th class="num">Movió</th><th data-filtrar>Estado</th></tr></thead>
+                <tbody>
+                <?php foreach ($historial as $h): [$texto, $tipo] = $estadosCita[$h['estado']] ?? [(string) $h['estado'], 'neu']; ?>
+                    <tr>
+                        <td class="nowrap"><?= e($dia((string) $h['fecha_aplicada'])) ?><span class="sub"><?= e($h['hora_aplicada']) ?></span></td>
+                        <td><?= e($h['empleado']) ?><span class="sub"><?= e($h['puesto']) ?></span></td>
+                        <td><?= e($h['medico']) ?><span class="sub"><?= e($h['motivo']) ?></span></td>
+                        <td class="nowrap"><?= e($dia((string) $h['fecha_asignada'])) ?><span class="sub"><?= e($h['hora_asignada']) ?></span></td>
+                        <td class="num"><?= (int) $h['citas_movidas'] === 1 ? '1 cita' : e($h['citas_movidas']) . ' citas' ?></td>
+                        <td><?= pill($texto, $tipo) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            </div>
+            <?php endif; ?>
+        </section>
+        <?php endif; ?>
     </div>
 
     <section class="card align-self-start">
@@ -95,7 +127,12 @@ $fila = static function (string $t, string $s, array $bloques) use ($hIni, $hFin
             <h2>Dar prioridad a un empleado</h2>
             <form method="post" action="/prioridad">
                 <?= Csrf::field() ?>
-                <div class="field"><label class="form-label" for="numero_documento">Cédula del empleado</label><input class="form-control" id="numero_documento" name="numero_documento" required maxlength="30"></div>
+                <div class="field"><label class="form-label" for="numero_documento">Cédula del empleado</label>
+                    <input class="form-control" id="numero_documento" name="numero_documento" required maxlength="30" list="empleados-activos" autocomplete="off" placeholder="Escribe la cédula o el nombre">
+                    <datalist id="empleados-activos">
+                        <?php foreach ($empleados as $em): ?><option value="<?= e($em['numero_documento']) ?>"><?= e($em['nombre_completo'] . ' · ' . $em['puesto']) ?></option><?php endforeach; ?>
+                    </datalist>
+                    <span class="hint">Al escribir aparecen los empleados activos.</span></div>
                 <div class="field"><label class="form-label" for="motivo">Motivo de la emergencia</label><textarea class="form-control" id="motivo" name="motivo" rows="3" required maxlength="500"></textarea></div>
                 <div class="field"><label class="form-label" for="id_medico">Médico</label><select class="form-select" id="id_medico" name="id_medico" required><?= opciones($medicos, 'id_medico', 'nombre') ?></select></div>
                 <div class="notice info mb-field"><i class="bi bi-info-circle-fill" aria-hidden="true"></i><span>La prioridad pasa por encima de las citas ya colocadas. Cada paciente afectado recibe un aviso.</span></div>
