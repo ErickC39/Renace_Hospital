@@ -59,7 +59,9 @@ return static function (Router $router): void {
     // Inventario
     $router->get('/inventario', [InventarioController::class, 'index'], 'inventario.ver');
     $router->get('/inventario/exportar', [InventarioController::class, 'exportar'], 'inventario.ver');
+    $router->get('/inventario/movimientos', [InventarioController::class, 'movimientos'], 'inventario.ver');
     $router->post('/inventario/entrada', [InventarioController::class, 'entrada'], 'inventario.ajustar');
+    $router->post('/inventario/salida', [InventarioController::class, 'salida'], 'inventario.ajustar');
     $router->post('/inventario/productos', [InventarioController::class, 'crearProducto'], 'inventario.ajustar');
     $router->post('/inventario/productos/{id}', [InventarioController::class, 'editarProducto'], 'inventario.ajustar');
     $router->get('/inventario/catalogos', [InventarioController::class, 'catalogos'], 'inventario.ajustar');

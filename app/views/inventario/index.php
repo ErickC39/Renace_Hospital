@@ -4,6 +4,7 @@
  * @var list<array<string, mixed>> $categorias
  * @var list<array<string, mixed>> $proveedores
  * @var list<array<string, mixed>> $movimientos
+ * @var array<string, string> $motivosSalida
  * @var string $busqueda
  * @var string $categoria
  */
@@ -129,16 +130,44 @@ $camposProducto = static function (?array $p, string $px) use ($categorias): str
             </form>
             <?php endif; ?>
         </section>
-        <?php endif; ?>
+        <?php if ($productos !== []): ?>
         <section class="card">
-            <div class="card-h"><h2>Últimos movimientos</h2><span>Hoy</span></div>
+            <h2>Registrar salida</h2>
+            <p class="hint">Para lo que sale sin venderse. Las ventas descuentan solas al crear el pedido.</p>
+            <form method="post" action="/inventario/salida">
+                <?= Csrf::field() ?>
+                <div class="field"><label class="form-label" for="salida-producto">Producto</label>
+                    <select class="form-select" id="salida-producto" name="id_producto" required><?= opciones($productos, 'id_producto', 'nombre') ?></select></div>
+                <div class="fields f2">
+                    <div class="field"><label class="form-label" for="salida-motivo">Motivo</label>
+                        <select class="form-select" id="salida-motivo" name="motivo" required>
+                            <?php foreach ($motivosSalida as $valor => $texto): ?><option value="<?= e($valor) ?>"><?= e($texto) ?></option><?php endforeach; ?>
+                        </select></div>
+                    <div class="field"><label class="form-label" for="salida-cantidad">Cantidad</label>
+                        <input class="form-control" id="salida-cantidad" name="cantidad" type="number" min="1" required></div>
+                </div>
+                <div class="field"><label class="form-label" for="salida-observacion">Explicación</label>
+                    <input class="form-control" id="salida-observacion" name="observacion" maxlength="500" required placeholder="Por ejemplo, frascos rotos en la bodega"></div>
+                <button class="btn btn-outline w-100" type="submit"><i class="bi bi-box-arrow-up" aria-hidden="true"></i>Registrar salida</button>
+            </form>
+        </section>
+        <?php endif; ?>
+        <?php endif; ?>
+        <?php
+        $hoyIso = (new DateTimeImmutable('now', new DateTimeZone('America/Costa_Rica')))->format('Y-m-d');
+        $cuando = static fn(array $m): string => isset($m['fecha']) && $m['fecha'] !== $hoyIso
+            ? date_create((string) $m['fecha'])->format('d/m') . ' ' . $m['hora']
+            : (string) $m['hora'];
+        ?>
+        <section class="card">
+            <div class="card-h"><h2>Últimos movimientos</h2><a href="/inventario/movimientos">Ver todos</a></div>
             <?php if ($movimientos === []): ?>
-                <p class="muted mb-0">Sin movimientos hoy.</p>
+                <p class="muted mb-0">Todavía no hay movimientos.</p>
             <?php endif; ?>
             <?php foreach ($movimientos as $m): ?>
                 <div class="line con-regla">
-                    <span><?= e($m['producto']) ?><span class="sub"><?= e($m['tipo_movimiento']) ?> · <?= e($m['observacion']) ?></span></span>
-                    <span class="num"><?= strcasecmp((string) $m['tipo_movimiento'], 'Entrada') === 0 ? '+' : '−' ?><?= e(abs((int) $m['cantidad'])) ?><span class="sub"><?= e($m['hora']) ?></span></span>
+                    <span><?= e($m['producto']) ?><span class="sub"><?= e($m['tipo_movimiento']) ?><?= ($m['observacion'] ?? '') !== '' ? ' · ' . e($m['observacion']) : '' ?></span></span>
+                    <span class="num"><?= strcasecmp((string) $m['tipo_movimiento'], 'Entrada') === 0 ? '+' : '−' ?><?= e(abs((int) $m['cantidad'])) ?><span class="sub"><?= e($cuando($m)) ?></span></span>
                 </div>
             <?php endforeach; ?>
         </section>

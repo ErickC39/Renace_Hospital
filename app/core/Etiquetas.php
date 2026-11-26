@@ -68,6 +68,7 @@ final class Etiquetas
         'sp_hospitalizacion_salida' => 'Dar salida de habitación',
         'sp_horario_quitar' => 'Quitar bloque de horario',
         'sp_inventario_registrar_entrada' => 'Registrar entrada de inventario',
+        'sp_inventario_registrar_salida' => 'Registrar salida de inventario',
         'sp_medicamento_con_producto' => 'Guardar medicamento con su producto',
         'sp_medicamento_guardar' => 'Guardar medicamento',
         'sp_medico_guardar' => 'Guardar médico',

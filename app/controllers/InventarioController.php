@@ -13,6 +13,9 @@ use App\Models\Inventario;
 /** Inventario: existencias, entradas, productos, proveedores, categorías y exportación a Excel. */
 final class InventarioController extends Controlador
 {
+    /** Motivos de una salida que no es venta. */
+    public const MOTIVOS_SALIDA = ['MERMA' => 'Merma o daño', 'VENCIDO' => 'Producto vencido', 'USO_MEDICO' => 'Uso en atención', 'AJUSTE' => 'Ajuste por conteo'];
+
     /** GET /inventario */
     public function index(): string
     {
@@ -22,10 +25,46 @@ final class InventarioController extends Controlador
             'productos' => $inv->productos(consulta('q'), consulta('categoria')),
             'categorias' => $inv->categorias(),
             'proveedores' => $inv->proveedores(),
-            'movimientos' => $inv->movimientosDeHoy(),
+            'movimientos' => $inv->ultimosMovimientos(),
+            'motivosSalida' => self::MOTIVOS_SALIDA,
             'busqueda' => consulta('q'),
             'categoria' => consulta('categoria'),
         ]);
+    }
+
+    /** GET /inventario/movimientos · Entradas y salidas de cualquier día. */
+    public function movimientos(): string
+    {
+        $fecha = static fn(string $v): string => preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) === 1 ? $v : '';
+        $filtro = [
+            'desde' => $fecha(consulta('desde')),
+            'hasta' => $fecha(consulta('hasta')),
+            'tipo' => in_array(consulta('tipo'), ['Entrada', 'Salida'], true) ? consulta('tipo') : '',
+        ];
+        return View::render('inventario/movimientos', [
+            'titulo' => 'Movimientos de inventario',
+            'movimientos' => (new Inventario())->movimientos($filtro['desde'], $filtro['hasta'], $filtro['tipo']),
+            'filtro' => $filtro,
+            'motivosSalida' => self::MOTIVOS_SALIDA,
+        ]);
+    }
+
+    /** POST /inventario/salida */
+    public function salida(): Response
+    {
+        $cantidad = (int) entrada('cantidad');
+        $motivo = entrada('motivo');
+        if ((int) entrada('id_producto') <= 0 || $cantidad <= 0 || !isset(self::MOTIVOS_SALIDA[$motivo])) {
+            return $this->rechazar('Elige el producto y el motivo, e indica una cantidad mayor que cero.', '/inventario');
+        }
+        if (entrada('observacion') === '') {
+            return $this->rechazar('Explica brevemente el motivo de la salida.', '/inventario');
+        }
+        return $this->ejecutar(
+            static fn() => (new Inventario())->registrarSalida((int) entrada('id_producto'), $motivo, $cantidad, entrada('observacion'), (int) Auth::user()['id_usuario']),
+            'Salida registrada. Las existencias se actualizaron.',
+            '/inventario',
+        );
     }
 
     /** POST /inventario/entrada */

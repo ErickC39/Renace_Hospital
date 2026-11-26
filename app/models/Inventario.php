@@ -47,6 +47,67 @@ final class Inventario extends Modelo
         );
     }
 
+    /**
+     * Los últimos movimientos de cualquier día, del más nuevo al más viejo. Si la base todavía no
+     * trae la fecha de cada movimiento (ORA-00904), devuelve los de hoy como antes.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function ultimosMovimientos(int $limite = 6): array
+    {
+        try {
+            return $this->db->select(
+                "SELECT fecha, hora, tipo_movimiento, producto, cantidad, observacion
+                   FROM vw_inventario_movimiento
+                  ORDER BY id_movimiento_producto DESC
+                  FETCH FIRST {$limite} ROWS ONLY",
+            );
+        } catch (\RuntimeException $e) {
+            if ($e->getCode() !== 904) {
+                throw $e;
+            }
+            return $this->movimientosDeHoy($limite);
+        }
+    }
+
+    /**
+     * Movimientos entre dos fechas opcionales (aaaa-mm-dd) y de un tipo (Entrada o Salida).
+     * Devuelve null si la base todavía no trae la fecha de cada movimiento.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    public function movimientos(string $desde, string $hasta, string $tipo): ?array
+    {
+        try {
+            return $this->db->select(
+                'SELECT fecha, hora, tipo_movimiento, motivo, codigo, producto, cantidad, observacion, empleado, proveedor
+                   FROM vw_inventario_movimiento
+                  WHERE (:desde IS NULL OR fecha >= :desde)
+                    AND (:hasta IS NULL OR fecha <= :hasta)
+                    AND (:tipo IS NULL OR tipo_movimiento = :tipo)
+                  ORDER BY id_movimiento_producto DESC',
+                ['desde' => $desde === '' ? null : $desde, 'hasta' => $hasta === '' ? null : $hasta, 'tipo' => $tipo === '' ? null : $tipo],
+            );
+        } catch (\RuntimeException $e) {
+            if ($e->getCode() !== 904) {
+                throw $e;
+            }
+            return null;
+        }
+    }
+
+    /** Salida que no es venta. $motivo: MERMA, VENCIDO, USO_MEDICO o AJUSTE. La base no deja bajar de cero. */
+    public function registrarSalida(int $idProducto, string $motivo, int $cantidad, string $observacion, int $idUsuario): void
+    {
+        $this->db->call('pkg_inventario_salida.sp_inventario_registrar_salida', [
+            'p_id_producto' => $idProducto,
+            'p_motivo' => $motivo,
+            'p_cantidad' => $cantidad,
+            'p_observacion' => $observacion,
+            'p_id_usuario' => $idUsuario,
+        ]);
+    }
+
     public function registrarEntrada(int $idProducto, int $idProveedor, int $cantidad, string $observacion, int $idUsuario): void
     {
         $this->db->call('pkg_inventario.sp_inventario_registrar_entrada', [
